@@ -1243,13 +1243,34 @@ ul { list-style: none; }
  *   "done"      — all visible items handled, show Celebration
  */
 
+/*
+ * During the brief loading window before JS sets the real data-state,
+ * EVERY conditional section is hidden via visibility:hidden so users
+ * don't see e.g. both the welcome card AND the survey at once.
+ */
 [data-state="loading"] .js-welcome,
 [data-state="loading"] .js-survey,
 [data-state="loading"] .js-result,
 [data-state="loading"] .js-skipped-banner,
-[data-state="loading"] .js-tax-list,
-[data-state="loading"] .js-progress,
+[data-state="loading"] .js-deck,
+[data-state="loading"] .js-calc-trigger,
+[data-state="loading"] .js-aggregate,
+[data-state="loading"] .js-view-toggle-row,
 [data-state="loading"] .js-celebration { visibility: hidden; }
+
+/*
+ * Default visibility rules for the conditional sections.
+ * No HTML `hidden` attribute is used; the state-machine CSS below
+ * controls everything via display:none.
+ */
+.js-survey,
+.js-result,
+.js-skipped-banner,
+.js-celebration { display: none; }
+[data-state="survey"] .js-survey { display: block; }
+[data-state="result"] .js-result { display: block; }
+[data-state="skipped"] .js-skipped-banner { display: block; }
+[data-state="done"] .js-celebration { display: block; }
 
 [data-state="welcome"] .js-survey,
 [data-state="welcome"] .js-result,
@@ -1306,14 +1327,15 @@ ul { list-style: none; }
   flex-wrap: wrap;
 }
 
-/* ─── View toggle (For me / All) ────────────────────────────── */
+/* ─── View toggle (For me / All) — prominent & sticky ─────── */
 
 .view-toggle {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin: var(--space-6) 0 var(--space-3);
+  margin: var(--space-6) 0 var(--space-4);
   flex-wrap: wrap;
+  justify-content: center;
 }
 .view-toggle__label {
   font-size: 12px;
@@ -1324,11 +1346,11 @@ ul { list-style: none; }
 }
 .view-toggle__buttons {
   display: inline-flex;
-  border: 2px solid var(--ink);
+  border: 2.5px solid var(--ink);
   border-radius: 999px;
   overflow: hidden;
   background: var(--paper);
-  box-shadow: 0 2px 0 var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
 }
 .view-toggle__btn {
   appearance: none;
@@ -1337,15 +1359,16 @@ ul { list-style: none; }
   border-right: 2px solid var(--ink);
   font-family: inherit;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ink);
-  padding: 8px 16px;
+  padding: 10px 22px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 38px;
+  min-height: 44px;
   transition: background 120ms ease-out, color 120ms ease-out;
+  letter-spacing: 0.01em;
 }
 .view-toggle__btn:last-child { border-right: 0; }
 .view-toggle__btn:hover { background: var(--surface); }
@@ -1357,6 +1380,9 @@ ul { list-style: none; }
 .view-toggle__btn[aria-pressed="true"] {
   background: var(--ink);
   color: var(--paper);
+}
+.view-toggle__btn[aria-pressed="false"]:hover {
+  background: var(--surface-warm);
 }
 
 /* ─── Card deck ────────────────────────────────────────────────── */
@@ -1580,15 +1606,39 @@ ul { list-style: none; }
 .deck__empty {
   display: none;
   background: var(--surface);
-  border: 2px dashed var(--border);
+  border: 2.5px solid var(--ink);
   border-radius: var(--radius-lg);
-  padding: var(--space-8);
+  padding: var(--space-8) var(--space-6);
   text-align: center;
-  color: var(--ink-soft);
+  color: var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
 }
 .deck[data-empty="true"] .deck__cards,
 .deck[data-empty="true"] .deck__nav { display: none; }
 .deck[data-empty="true"] .deck__empty { display: block; }
+.deck__empty-mark {
+  color: var(--ink-faint);
+  margin-bottom: var(--space-3);
+}
+.deck__empty-mark svg { display: inline-block; }
+.deck__empty-title {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 3.5vw, 26px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin-bottom: var(--space-3);
+}
+.deck__empty-body {
+  color: var(--ink-soft);
+  max-width: 44ch;
+  margin: 0 auto var(--space-5);
+}
+.deck__empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+}
 
 /* ─── Calc trigger (the button that opens the modal) ────── */
 

@@ -208,7 +208,6 @@
     function renderResultBanner(profile) {
       const result = document.querySelector('.js-result');
       if (!result) return;
-      result.removeAttribute('hidden');
       const total = parseInt(result.getAttribute('data-total') || '3', 10);
       const cards = Array.from(document.querySelectorAll('[data-progress-id]'));
       const applies = cards.filter((c) => appliesTo(c.getAttribute('data-progress-id'), profile));
@@ -618,6 +617,25 @@
       if (clearBtn) clearBtn.addEventListener('click', (e) => {
         e.preventDefault();
         remove(KEY_CHECKLIST);
+        renderAll();
+        const note = document.querySelector('.js-cleared-note');
+        if (note) { note.removeAttribute('hidden'); setTimeout(() => note.setAttribute('hidden', ''), 2500); }
+      });
+
+      // Reset everything (profile + checklist + calc state)
+      const resetBtn = document.querySelector('.js-reset-all');
+      if (resetBtn) resetBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        remove(KEY_CHECKLIST);
+        remove(KEY_PROFILE);
+        remove(KEY_CALC);
+        // Re-sync the now-empty calc panel UI
+        const incomeEl = document.querySelector('.js-calc-income');
+        if (incomeEl) incomeEl.value = '';
+        const exemptEl = document.querySelector('.js-calc-arts-exempt');
+        if (exemptEl) exemptEl.checked = false;
+        const singleEl = document.querySelector('.js-calc-filing[value="single"]');
+        if (singleEl) singleEl.checked = true;
         renderAll();
         const note = document.querySelector('.js-cleared-note');
         if (note) { note.removeAttribute('hidden'); setTimeout(() => note.setAttribute('hidden', ''), 2500); }

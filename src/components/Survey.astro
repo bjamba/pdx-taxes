@@ -9,13 +9,13 @@ interface Props {
 const { lang } = Astro.props;
 ---
 
-<section class="survey js-survey" hidden>
+<section class="survey js-survey">
   <form class="survey__form js-survey-form">
     <fieldset class="survey__q">
       <legend class="survey__legend">{t(lang, 'survey.q1_label')}</legend>
       <div class="survey__options">
         <label class="survey-option">
-          <input type="radio" name="residency" value="portland" required />
+          <input type="radio" name="residency" value="portland" required checked />
           <span>{t(lang, 'survey.q1_portland')}</span>
         </label>
         <label class="survey-option">
@@ -62,7 +62,7 @@ const { lang } = Astro.props;
       <legend class="survey__legend">{t(lang, 'survey.q3_label')}</legend>
       <div class="survey__options">
         <label class="survey-option">
-          <input type="radio" name="income" value="low" required />
+          <input type="radio" name="income" value="low" required checked />
           <span>{t(lang, 'survey.q3_low')}</span>
         </label>
         <label class="survey-option">

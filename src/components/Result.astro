@@ -10,7 +10,7 @@ interface Props {
 const { lang, total } = Astro.props;
 ---
 
-<section class="result js-result" hidden data-total={total}>
+<section class="result js-result" data-total={total}>
   <span class="result__eyebrow js-result-eyebrow">{t(lang, 'result.eyebrow')}</span>
   <h2 class="result__title js-result-title"></h2>
   <p class="result__body js-result-body" hidden></p>

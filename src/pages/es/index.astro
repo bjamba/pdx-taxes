@@ -34,10 +34,9 @@ const taxes = (await getCollection('taxes-es')).sort(
     <ViewToggle lang={lang} />
     <TaxDeck lang={lang} taxes={taxes} />
 
-    <Disclaimer lang={lang} />
-
     <p class="clear-row js-clear-row">
       <button type="button" class="btn btn--ghost js-clear-checklist">{t(lang, 'checklist.clear')}</button>
+      <button type="button" class="btn btn--ghost js-reset-all">Restablecer todo</button>
       <span class="cleared-note js-cleared-note" hidden>✓ {t(lang, 'checklist.cleared')}</span>
     </p>
   </div>
