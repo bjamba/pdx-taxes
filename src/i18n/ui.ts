@@ -104,7 +104,7 @@ export const ui = {
     'jurisdiction.metro': 'Metro',
 
     /* Modal — same questions as the survey, edited any time */
-    'calc.trigger_title': 'Tell me more about your tax status',
+    'calc.trigger_title': 'Tell me about your tax status',
     'calc.trigger_lead': 'Adjust your answers to refine which taxes apply and how much you might owe.',
     'calc.modal_title': 'Your tax status',
     'calc.privacy': 'Stays in this browser. We never see this.',
@@ -226,7 +226,7 @@ export const ui = {
     'jurisdiction.multnomah-county': 'Condado de Multnomah',
     'jurisdiction.metro': 'Metro',
 
-    'calc.trigger_title': 'Cuéntenos más sobre su estado fiscal',
+    'calc.trigger_title': 'Cuéntenos sobre su estado fiscal',
     'calc.trigger_lead': 'Ajuste sus respuestas para refinar qué impuestos le aplican y cuánto podría deber.',
     'calc.modal_title': 'Su estado fiscal',
     'calc.privacy': 'Se queda en este navegador. Nunca lo vemos.',

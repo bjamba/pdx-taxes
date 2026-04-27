@@ -1963,18 +1963,22 @@ ul { list-style: none; }
   /* now lives inside the modal — no border / shadow of its own */
 }
 
-/* ─── Modal form — answers ────────────────────────────────── */
+/* ─── Modal — embeds the same Survey component ─────────── */
 
-.calc-modal__form { display: block; }
-.calc-modal__privacy {
-  font-size: 13px;
-  color: var(--ink-soft);
-  background: var(--paper);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  border: 1.5px dashed var(--border);
-  margin: var(--space-4) 0 var(--space-3);
+/* Drop the survey's outer card chrome when it's inside the modal —
+   the modal itself is the card. */
+.survey--in-modal .survey {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
 }
+/* Hide the destructive "back / show me everything" button inside the modal —
+   the X / overlay click serves as cancel. */
+.survey--in-modal .js-survey-skip { display: none; }
+.survey--in-modal .survey__actions { justify-content: flex-end; }
+.survey__q--exempt { margin-top: var(--space-6); }
 .calc-field {
   display: block;
   margin-bottom: var(--space-5);

@@ -1,6 +1,7 @@
 ---
 import type { Lang } from '../i18n/ui';
 import { t } from '../i18n/ui';
+import Survey from './Survey.astro';
 
 interface Props {
   lang: Lang;
@@ -9,7 +10,6 @@ interface Props {
 const { lang } = Astro.props;
 ---
 
-<!-- Trigger button — opens the modal where users can edit their answers. -->
 <button type="button" class="calc-trigger js-calc-trigger" aria-haspopup="dialog" aria-expanded="false">
   <span class="calc-trigger__icon" aria-hidden="true">📊</span>
   <span class="calc-trigger__text">
@@ -18,7 +18,6 @@ const { lang } = Astro.props;
   </span>
 </button>
 
-<!-- Modal -->
 <div class="calc-modal js-calc-modal" role="dialog" aria-modal="true" aria-labelledby="calc-modal-title" hidden>
   <div class="calc-modal__overlay js-calc-close-overlay"></div>
 
@@ -28,72 +27,21 @@ const { lang } = Astro.props;
       <button type="button" class="calc-modal__close js-calc-close" aria-label={t(lang, 'calc.close')}>×</button>
     </div>
 
-    <form class="calc-modal__form js-calc-form" novalidate>
-      <fieldset class="calc-field">
-        <legend>{t(lang, 'survey.q1_label')}</legend>
-        <div class="calc-field__radios calc-field__radios--stack">
-          <label class="calc-radio">
-            <input type="radio" name="residency" value="portland" />
-            <span>{t(lang, 'survey.q1_portland')}</span>
-          </label>
-          <label class="calc-radio">
-            <input type="radio" name="residency" value="multnomah" />
-            <span>{t(lang, 'survey.q1_multnomah')}</span>
-          </label>
-          <label class="calc-radio">
-            <input type="radio" name="residency" value="metro" />
-            <span>{t(lang, 'survey.q1_metro')}</span>
-          </label>
-          <label class="calc-radio">
-            <input type="radio" name="residency" value="outside" />
-            <span>{t(lang, 'survey.q1_outside')}</span>
-          </label>
-          <label class="calc-radio">
-            <input type="radio" name="residency" value="unsure" />
-            <span>{t(lang, 'survey.q1_unsure')}</span>
-          </label>
-        </div>
-      </fieldset>
+    <!-- Same survey component as in-page; rendered with a `survey--in-modal` wrapper
+         so we can hide the secondary skip button and close the modal on submit. -->
+    <div class="survey--in-modal">
+      <Survey lang={lang} />
 
-      <fieldset class="calc-field">
-        <legend>{t(lang, 'survey.q2_label')}</legend>
-        <div class="calc-field__radios">
-          <label class="calc-radio">
-            <input type="radio" name="filing" value="single" />
-            <span>{t(lang, 'survey.q2_single')}</span>
-          </label>
-          <label class="calc-radio">
-            <input type="radio" name="filing" value="joint" />
-            <span>{t(lang, 'survey.q2_joint')}</span>
-          </label>
-        </div>
-      </fieldset>
-
-      <label class="calc-field">
-        <span class="calc-field__legend">{t(lang, 'survey.q3_label')}</span>
-        <span class="calc-income">
-          <span class="calc-income__currency">$</span>
-          <input type="number" name="income" class="calc-income__input" placeholder="0" inputmode="numeric" min="0" step="1000" />
-        </span>
-        <span class="calc-field__hint">{t(lang, 'survey.q3_hint')}</span>
-      </label>
-
-      <fieldset class="calc-field">
-        <legend>{t(lang, 'calc.arts_legend')}</legend>
+      <fieldset class="survey__q survey__q--exempt">
+        <legend class="survey__legend">{t(lang, 'calc.arts_legend')}</legend>
         <label class="calc-exempt">
-          <input type="checkbox" name="artsExempt" />
+          <input type="checkbox" class="js-modal-arts-exempt" />
           <span class="calc-exempt__main">
             <span class="calc-exempt__title">{t(lang, 'calc.arts_exempt_label')}</span>
             <span class="calc-exempt__hint">{t(lang, 'calc.arts_exempt_hint')}</span>
           </span>
         </label>
       </fieldset>
-
-      <p class="calc-modal__privacy">🔒 {t(lang, 'calc.privacy')}</p>
-
-      <div class="calc-modal__footer">
-        <button type="submit" class="btn btn--primary">{t(lang, 'calc.save')}</button>
-      </div>
-    </form>
+    </div>
   </div>
 </div>

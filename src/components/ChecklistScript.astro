@@ -395,25 +395,24 @@
       return { residency, filing, income, artsExempt, ...(cur.showAll ? { showAll: true } : {}) };
     }
 
-    function syncCalcModalForm(profile) {
-      const form = document.querySelector('.js-calc-form');
+    /** Pre-fill any survey form with the saved profile values. */
+    function syncSurveyForm(form, profile) {
       if (!form) return;
       const p = profile || {};
-      // Residency
       form.querySelectorAll('input[name="residency"]').forEach((r) => {
         r.checked = (r.value === (p.residency || 'portland'));
       });
-      // Filing
       form.querySelectorAll('input[name="filing"]').forEach((r) => {
         r.checked = (r.value === (p.filing || 'single'));
       });
-      // Income
       const incomeEl = form.querySelector('input[name="income"]');
       if (incomeEl) incomeEl.value = (p.income == null) ? '' : String(p.income);
-      // Arts exempt
-      const exemptEl = form.querySelector('input[name="artsExempt"]');
+      // Arts exempt lives next to the form in modal context
+      const exemptEl = document.querySelector('.js-modal-arts-exempt');
       if (exemptEl) exemptEl.checked = !!p.artsExempt;
     }
+    // Allow handlers above (defined before this function) to call closeCalc via window.
+    function closeCalc() { if (window.__pdxClose) window.__pdxClose(); }
 
     /* ── Calendar (.ics) ─────────────────────────────── */
     function pad(n) { return n < 10 ? '0' + n : '' + n; }
@@ -531,23 +530,58 @@
         scrollToTopOfDeck();
       });
 
-      // Survey form (in-page)
-      const form = document.querySelector('.js-survey-form');
-      if (form) {
+      // Survey forms — both the in-page form and the modal-embedded one
+      document.querySelectorAll('.js-survey-form').forEach((form) => {
+        const inModal = !!form.closest('.js-calc-modal');
         form.addEventListener('submit', (e) => {
           e.preventDefault();
+          // Pull arts exemption from the modal-only checkbox if present
+          const cur = readProfile() || {};
+          const exemptEl = form.closest('.js-calc-modal') ? document.querySelector('.js-modal-arts-exempt') : null;
           const profile = readProfileFromForm(form);
+          if (exemptEl) profile.artsExempt = !!exemptEl.checked;
+          else profile.artsExempt = !!cur.artsExempt;
           writeProfile(profile);
           renderAll();
-          scrollToTopOfDeck();
+          if (inModal) closeCalc();
+          else scrollToTopOfDeck();
         });
         const back = form.querySelector('.js-survey-skip');
         if (back) back.addEventListener('click', () => {
+          if (inModal) {
+            // Inside the modal, "back / show me everything" just closes — no destructive action.
+            closeCalc();
+            return;
+          }
           writeProfile({ showAll: true, residency: 'unsure', filing: 'single', income: null, artsExempt: false });
           renderAll();
           scrollToTopOfDeck();
         });
-      }
+        // Live-update on change/input — only inside the modal, so users see
+        // their estimates ripple as they edit.
+        if (inModal) {
+          const live = () => {
+            const cur = readProfile() || {};
+            const profile = readProfileFromForm(form);
+            const exemptEl = document.querySelector('.js-modal-arts-exempt');
+            profile.artsExempt = exemptEl ? !!exemptEl.checked : !!cur.artsExempt;
+            writeProfile(profile);
+            renderAll();
+          };
+          form.addEventListener('input', live);
+          form.addEventListener('change', live);
+        }
+      });
+      // Arts exempt checkbox lives outside the form; bind it separately for live updates.
+      const modalExempt = document.querySelector('.js-modal-arts-exempt');
+      if (modalExempt) modalExempt.addEventListener('change', () => {
+        const form = document.querySelector('.js-calc-modal .js-survey-form');
+        if (!form) return;
+        const profile = readProfileFromForm(form);
+        profile.artsExempt = !!modalExempt.checked;
+        writeProfile(profile);
+        renderAll();
+      });
 
       // Result banner — edit goes back to the survey form
       const editBtn = document.querySelector('.js-result-edit');
@@ -593,14 +627,15 @@
         if (note) { note.removeAttribute('hidden'); setTimeout(() => note.setAttribute('hidden', ''), 2500); }
       });
 
-      // Calc modal — open / close
+      // Calc modal — open / close (uses same survey form inside)
       const modal = document.querySelector('.js-calc-modal');
       const trigger = document.querySelector('.js-calc-trigger');
       let lastFocus = null;
       function openCalc() {
         if (!modal) return;
         lastFocus = document.activeElement;
-        syncCalcModalForm(readProfile());
+        const modalForm = modal.querySelector('.js-survey-form');
+        if (modalForm) syncSurveyForm(modalForm, readProfile());
         modal.removeAttribute('hidden');
         modal.classList.add('is-open');
         document.body.style.overflow = 'hidden';
@@ -618,32 +653,13 @@
         if (trigger) trigger.setAttribute('aria-expanded', 'false');
         if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
       }
+      // Make closeCalc reachable from the form-submit handler above.
+      window.__pdxClose = closeCalc;
       if (trigger) trigger.addEventListener('click', openCalc);
       document.querySelectorAll('.js-calc-close, .js-calc-close-overlay').forEach((el) => el.addEventListener('click', closeCalc));
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && modal && modal.classList.contains('is-open')) closeCalc();
       });
-      const calcForm = document.querySelector('.js-calc-form');
-      if (calcForm) {
-        calcForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          const profile = readProfileFromForm(calcForm);
-          writeProfile(profile);
-          renderAll();
-          closeCalc();
-        });
-        // Live update as user types in the modal — without closing.
-        calcForm.addEventListener('input', () => {
-          const profile = readProfileFromForm(calcForm);
-          writeProfile(profile);
-          renderAll();
-        });
-        calcForm.addEventListener('change', () => {
-          const profile = readProfileFromForm(calcForm);
-          writeProfile(profile);
-          renderAll();
-        });
-      }
 
       // Calendar — single
       document.querySelectorAll('.js-calendar-add').forEach((btn) => {
