@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Disclaimer from '../../components/Disclaimer.astro';
+import { t } from '../../i18n/ui';
+
+const lang = 'es' as const;
+
+interface Deadline {
+  date: string;
+  display: string;
+  label: string;
+  hint?: string;
+  remindersDays: number[];
+}
+
+const formArrival: Deadline[] = [
+  { date: '2026-01-31', display: '31 de enero de 2026', label: 'Formularios W-2 de su empleador', hint: 'Los empleadores deben enviarlos antes de esta fecha.', remindersDays: [3] },
+  { date: '2026-01-31', display: '31 de enero de 2026', label: '1099-NEC para contratistas', hint: '¿Trabajador autónomo? Espere esto de cada cliente que le pague $600 o más.', remindersDays: [3] },
+  { date: '2026-01-31', display: '31 de enero de 2026', label: '1099-MISC, 1099-INT, 1099-DIV', hint: 'Intereses bancarios, dividendos, ingresos varios.', remindersDays: [3] },
+  { date: '2026-02-15', display: '15 de febrero de 2026', label: '1099-B de corredurías', hint: 'Resumen de ventas de inversiones. Algunos corredores envían más tarde.', remindersDays: [3] },
+  { date: '2026-03-15', display: '15 de marzo de 2026', label: 'K-1 de sociedades / S-corps', hint: 'Si tiene una participación en un pequeño negocio.', remindersDays: [7] },
+];
+
+const filingDeadlines: Deadline[] = [
+  { date: '2026-04-15', display: '15 de abril de 2026', label: 'Impuesto federal sobre la renta', remindersDays: [30, 14, 1] },
+  { date: '2026-04-15', display: '15 de abril de 2026', label: 'Impuesto estatal de Oregon', remindersDays: [30, 14, 1] },
+  { date: '2026-04-15', display: '15 de abril de 2026', label: 'Impuesto de las Artes de Portland', hint: 'Una cuota fija de $35 si califica.', remindersDays: [30, 14, 1] },
+  { date: '2026-04-15', display: '15 de abril de 2026', label: 'Preescolar Para Todos de Multnomah (PFA)', remindersDays: [30, 14, 1] },
+  { date: '2026-04-15', display: '15 de abril de 2026', label: 'Servicios de Vivienda de Apoyo de Metro (SHS)', remindersDays: [30, 14, 1] },
+];
+---
+
+<BaseLayout lang={lang} path="/deadlines" title="Fechas límite para el año fiscal 2025">
+  <h1>{t(lang, 'deadlines.title')}</h1>
+  <p class="lead">{t(lang, 'deadlines.lead')}</p>
+
+  <Disclaimer lang={lang} />
+
+  <div class="deadlines">
+    <div class="deadlines__group">
+      <h2>{t(lang, 'deadlines.section_forms')}</h2>
+      {formArrival.map((d) => (
+        <div class="deadline-item">
+          <div class="deadline-item__date tabular">{d.display}</div>
+          <div>
+            <div class="deadline-item__label">{d.label}</div>
+            {d.hint && <span class="deadline-item__hint">{d.hint}</span>}
+          </div>
+          <button type="button" class="btn btn--ghost js-calendar-add-deadline"
+                  data-date={d.date}
+                  data-title={d.label}
+                  data-desc={d.hint || ''}>
+            📅 Añadir al calendario
+          </button>
+        </div>
+      ))}
+    </div>
+
+    <div class="deadlines__group">
+      <h2>{t(lang, 'deadlines.section_filing')}</h2>
+      {filingDeadlines.map((d) => (
+        <div class="deadline-item">
+          <div class="deadline-item__date tabular">{d.display}</div>
+          <div>
+            <div class="deadline-item__label">{d.label}</div>
+            {d.hint && <span class="deadline-item__hint">{d.hint}</span>}
+          </div>
+          <button type="button" class="btn btn--ghost js-calendar-add-deadline"
+                  data-date={d.date}
+                  data-title={d.label}
+                  data-desc={d.hint || ''}>
+            📅 Añadir al calendario
+          </button>
+        </div>
+      ))}
+    </div>
+  </div>
+</BaseLayout>

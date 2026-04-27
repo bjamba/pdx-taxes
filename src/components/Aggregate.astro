@@ -1,0 +1,27 @@
+---
+import type { Lang } from '../i18n/ui';
+import { t } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<section class="aggregate js-aggregate" hidden>
+  <div class="aggregate__inner">
+    <div class="aggregate__text">
+      <span class="aggregate__title">{t(lang, 'aggregate.title')}</span>
+      <span class="aggregate__subtitle">{t(lang, 'aggregate.subtitle')}</span>
+    </div>
+    <div class="aggregate__amount-wrap">
+      <span class="aggregate__amount tabular js-aggregate-amount">$0</span>
+    </div>
+  </div>
+  <div class="aggregate__actions">
+    <button type="button" class="btn btn--ghost js-calendar-add-all">
+      📅 {t(lang, 'calendar.add_all')}
+    </button>
+  </div>
+</section>

@@ -291,6 +291,7 @@
       renderCardBadges();
       renderSegmented();
       renderProgress();
+      updateAggregate();
     }
 
     /* ── Bind events ────────────────────────────────────── */
@@ -396,6 +397,280 @@
           note.removeAttribute('hidden');
           setTimeout(() => note.setAttribute('hidden', ''), 2500);
         }
+      });
+
+      bindEstimators();
+      bindCalendar();
+    }
+
+    /* ── Estimators ──────────────────────────────────────── */
+
+    const estimates = {}; // taxId -> amount (number) | null
+    const estReasons = {}; // taxId -> string
+
+    function fmtUSD(n) {
+      try {
+        return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+      } catch { return '$' + Math.round(n).toLocaleString(); }
+    }
+
+    function computeArts(qualifies) {
+      return qualifies ? { applies: true, amount: 35 } : { applies: false, amount: 0, reason: 'Doesn\'t qualify.' };
+    }
+    function computePFA(filing, income) {
+      const isJoint = filing === 'joint';
+      const t1 = isJoint ? 200000 : 125000;
+      const t2 = isJoint ? 400000 : 250000;
+      const inc = Math.max(0, income || 0);
+      if (inc <= t1) return { applies: false, amount: 0, reason: `Below the ${isJoint ? '$200k joint' : '$125k single'} threshold.` };
+      const band1 = Math.min(inc, t2) - t1;
+      const band2 = Math.max(0, inc - t2);
+      return { applies: true, amount: band1 * 0.015 + band2 * 0.030 };
+    }
+    function computeSHS(filing, income) {
+      const isJoint = filing === 'joint';
+      const threshold = isJoint ? 205000 : 128000;
+      const taxable = Math.max(0, (income || 0) - threshold);
+      if (taxable === 0) return { applies: false, amount: 0, reason: `Below the ${isJoint ? '$205k joint' : '$128k single'} threshold.` };
+      return { applies: true, amount: taxable * 0.01 };
+    }
+
+    function bindEstimators() {
+      document.querySelectorAll('.js-estimator').forEach((est) => {
+        const taxId = est.getAttribute('data-tax-id');
+        const type = est.getAttribute('data-calc-type');
+        if (!taxId || !type) return;
+
+        // Prefill filing from profile if available
+        const profile = readProfile();
+        if (profile && profile.filing && (type === 'pfa' || type === 'shs')) {
+          const radio = est.querySelector(`input[name="${taxId}-filing"][value="${profile.filing === 'joint' ? 'joint' : 'single'}"]`);
+          if (radio) radio.checked = true;
+        }
+
+        const recompute = () => {
+          let result = { applies: false, amount: 0 };
+          if (type === 'arts') {
+            const q = est.querySelector('.js-arts-qual');
+            result = computeArts(!!(q && q.checked));
+          } else {
+            const filingEl = est.querySelector(`input[name="${taxId}-filing"]:checked`);
+            const filing = filingEl ? filingEl.value : 'single';
+            const incomeEl = est.querySelector('.js-income-input');
+            const income = parseFloat(incomeEl ? incomeEl.value : '0') || 0;
+            if (type === 'pfa') result = computePFA(filing, income);
+            else if (type === 'shs') result = computeSHS(filing, income);
+          }
+          showEstimate(est, taxId, result);
+          updateAggregate();
+        };
+
+        est.querySelectorAll('input').forEach((inp) => {
+          inp.addEventListener('input', recompute);
+          inp.addEventListener('change', recompute);
+        });
+
+        // Auto-compute on open if defaults are present (e.g. arts checkbox)
+        est.addEventListener('toggle', () => {
+          if (est.open) recompute();
+        });
+      });
+    }
+
+    function showEstimate(est, taxId, result) {
+      const resBox = est.querySelector('.js-estimator-result');
+      const amountEl = est.querySelector('.js-estimator-result-amount');
+      const reasonEl = est.querySelector('.js-estimator-reason');
+      const summaryAmt = est.querySelector('.js-estimator-amount');
+
+      const hasInput = result.applies || (result.reason && result.reason.length > 0);
+      if (!hasInput) {
+        if (resBox) resBox.setAttribute('hidden', '');
+        if (summaryAmt) summaryAmt.setAttribute('hidden', '');
+        estimates[taxId] = null;
+        return;
+      }
+
+      if (resBox) resBox.removeAttribute('hidden');
+      if (amountEl) amountEl.textContent = fmtUSD(Math.ceil(result.amount));
+      if (reasonEl) {
+        if (result.reason) { reasonEl.textContent = result.reason; reasonEl.removeAttribute('hidden'); }
+        else { reasonEl.textContent = ''; reasonEl.setAttribute('hidden', ''); }
+      }
+      if (summaryAmt) {
+        summaryAmt.textContent = result.applies ? fmtUSD(Math.ceil(result.amount)) : '$0';
+        summaryAmt.removeAttribute('hidden');
+      }
+
+      estimates[taxId] = result.applies ? result.amount : 0;
+      estReasons[taxId] = result.reason || '';
+    }
+
+    function updateAggregate() {
+      const banner = document.querySelector('.js-aggregate');
+      if (!banner) return;
+      // Sum estimates for taxes that are visible (apply by profile) and computed.
+      const profile = readProfile();
+      const cards = Array.from(document.querySelectorAll('.deck__card'));
+      let total = 0;
+      let any = false;
+      cards.forEach((card) => {
+        const id = card.getAttribute('data-progress-id');
+        if (!id) return;
+        const visible = !profile || profile.showAll || appliesTo(id, profile);
+        if (!visible) return;
+        if (estimates[id] != null) {
+          total += estimates[id];
+          any = true;
+        }
+      });
+      const amountEl = banner.querySelector('.js-aggregate-amount');
+      if (any) {
+        if (amountEl) amountEl.textContent = fmtUSD(Math.ceil(total));
+        banner.removeAttribute('hidden');
+      } else {
+        banner.setAttribute('hidden', '');
+      }
+    }
+
+    /* ── Calendar (.ics) ─────────────────────────────────── */
+
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+    function nowStamp() {
+      const d = new Date();
+      return d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
+    }
+    function parseDeadline(text) {
+      // Accepts "April 15, 2026" or "15 de abril de 2026" → ISO YYYY-MM-DD
+      const en = /^(\w+) (\d{1,2}),\s*(\d{4})$/;
+      const months = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+      const m = text.match(en);
+      if (m) {
+        const mo = months[m[1].toLowerCase()];
+        if (mo) return `${m[3]}-${pad(mo)}-${pad(parseInt(m[2],10))}`;
+      }
+      // Spanish: "15 de abril de 2026"
+      const esRe = /^(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})$/i;
+      const monthsEs = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+      const me = text.match(esRe);
+      if (me) {
+        const mo = monthsEs[me[2].toLowerCase()];
+        if (mo) return `${me[3]}-${pad(mo)}-${pad(parseInt(me[1],10))}`;
+      }
+      return null;
+    }
+    function escIcs(s) {
+      return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+    }
+    function buildICS(events) {
+      const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//pdx-taxes//community resource//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+      events.forEach((ev) => {
+        const dt = ev.date.replace(/-/g,'');
+        const end = new Date(ev.date + 'T00:00:00Z'); end.setUTCDate(end.getUTCDate()+1);
+        const endStr = end.getUTCFullYear() + pad(end.getUTCMonth()+1) + pad(end.getUTCDate());
+        lines.push(
+          'BEGIN:VEVENT',
+          `UID:${ev.uid}@pdx-taxes.bjamba.github.io`,
+          `DTSTAMP:${nowStamp()}`,
+          `DTSTART;VALUE=DATE:${dt}`,
+          `DTEND;VALUE=DATE:${endStr}`,
+          `SUMMARY:${escIcs(ev.title)}`,
+        );
+        if (ev.description) lines.push(`DESCRIPTION:${escIcs(ev.description)}`);
+        if (ev.url) lines.push(`URL:${ev.url}`);
+        (ev.remindersDays || []).forEach((d) => {
+          lines.push('BEGIN:VALARM', `TRIGGER:-P${d}D`, 'ACTION:DISPLAY', `DESCRIPTION:${escIcs(ev.title)}`, 'END:VALARM');
+        });
+        lines.push('END:VEVENT');
+      });
+      lines.push('END:VCALENDAR');
+      return lines.join('\r\n') + '\r\n';
+    }
+    function downloadICS(filename, events) {
+      const blob = new Blob([buildICS(events)], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function flashCalendarFeedback(btn) {
+      const original = btn.innerHTML;
+      btn.innerHTML = '✓ ' + (btn.getAttribute('data-done-label') || 'Downloaded');
+      setTimeout(() => { btn.innerHTML = original; }, 1800);
+    }
+
+    function bindCalendar() {
+      // Per-card single deadline
+      document.querySelectorAll('.js-calendar-add').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = btn.getAttribute('data-tax-id');
+          const name = btn.getAttribute('data-tax-name');
+          const deadline = btn.getAttribute('data-tax-deadline');
+          const url = btn.getAttribute('data-tax-url');
+          const iso = parseDeadline(deadline || '');
+          if (!iso) return;
+          downloadICS(`${id}-deadline.ics`, [{
+            uid: `${id}-${iso}`,
+            date: iso,
+            title: `${name} — file by today`,
+            description: 'Filing deadline. Heads up from pdx-taxes.',
+            url,
+            remindersDays: [14, 1],
+          }]);
+          flashCalendarFeedback(btn);
+        });
+      });
+
+      // Aggregate: all visible deadlines
+      document.querySelectorAll('.js-calendar-add-all').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const profile = readProfile();
+          const cards = Array.from(document.querySelectorAll('.deck__card'));
+          const events = [];
+          cards.forEach((card) => {
+            const id = card.getAttribute('data-progress-id');
+            const visible = !profile || profile.showAll || appliesTo(id, profile);
+            if (!visible) return;
+            const name = card.querySelector('.deck__card-title');
+            const dlEl = card.querySelector('.deck__card-defs dd.tabular');
+            const deadline = dlEl ? dlEl.textContent.trim() : '';
+            const iso = parseDeadline(deadline);
+            if (!iso || !name) return;
+            events.push({
+              uid: `${id}-${iso}`,
+              date: iso,
+              title: `${name.textContent.trim()} — file by today`,
+              description: 'Filing deadline. Heads up from pdx-taxes.',
+              remindersDays: [14, 1],
+            });
+          });
+          if (events.length === 0) return;
+          downloadICS('pdx-taxes-deadlines.ics', events);
+          flashCalendarFeedback(btn);
+        });
+      });
+
+      // Deadlines page bulk button
+      document.querySelectorAll('.js-calendar-add-deadline').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const date = btn.getAttribute('data-date');
+          const title = btn.getAttribute('data-title') || 'Deadline';
+          if (!date) return;
+          downloadICS(`${title.toLowerCase().replace(/\s+/g, '-')}.ics`, [{
+            uid: `${title}-${date}`,
+            date, title,
+            description: btn.getAttribute('data-desc') || '',
+            remindersDays: [14, 1],
+          }]);
+          flashCalendarFeedback(btn);
+        });
       });
     }
 

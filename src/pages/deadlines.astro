@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Disclaimer from '../components/Disclaimer.astro';
+import { t } from '../i18n/ui';
+
+const lang = 'en' as const;
+
+interface Deadline {
+  date: string;          // ISO YYYY-MM-DD
+  display: string;       // human-readable
+  label: string;         // what it is
+  hint?: string;
+  remindersDays: number[];
+}
+
+const formArrival: Deadline[] = [
+  { date: '2026-01-31', display: 'January 31, 2026', label: 'W-2 forms from your employer', hint: 'Employers must send by this date.', remindersDays: [3] },
+  { date: '2026-01-31', display: 'January 31, 2026', label: '1099-NEC for contractors', hint: 'Self-employed? Expect this from each client paying you $600+.', remindersDays: [3] },
+  { date: '2026-01-31', display: 'January 31, 2026', label: '1099-MISC, 1099-INT, 1099-DIV', hint: 'Bank interest, dividends, miscellaneous income.', remindersDays: [3] },
+  { date: '2026-02-15', display: 'February 15, 2026', label: '1099-B from brokerages', hint: 'Investment sales summary. Some brokers send later.', remindersDays: [3] },
+  { date: '2026-03-15', display: 'March 15, 2026', label: 'K-1 from partnerships / S-corps', hint: 'If you have a small business stake.', remindersDays: [7] },
+];
+
+const filingDeadlines: Deadline[] = [
+  { date: '2026-04-15', display: 'April 15, 2026', label: 'Federal income tax', remindersDays: [30, 14, 1] },
+  { date: '2026-04-15', display: 'April 15, 2026', label: 'Oregon state income tax', remindersDays: [30, 14, 1] },
+  { date: '2026-04-15', display: 'April 15, 2026', label: 'Portland Arts Tax', hint: 'A flat $35 if you qualify.', remindersDays: [30, 14, 1] },
+  { date: '2026-04-15', display: 'April 15, 2026', label: 'Multnomah Preschool For All (PFA)', remindersDays: [30, 14, 1] },
+  { date: '2026-04-15', display: 'April 15, 2026', label: 'Metro Supportive Housing Services (SHS)', remindersDays: [30, 14, 1] },
+];
+---
+
+<BaseLayout lang={lang} path="/deadlines" title="Deadlines for tax year 2025">
+  <h1>{t(lang, 'deadlines.title')}</h1>
+  <p class="lead">{t(lang, 'deadlines.lead')}</p>
+
+  <Disclaimer lang={lang} />
+
+  <div class="deadlines">
+    <div class="deadlines__group">
+      <h2>{t(lang, 'deadlines.section_forms')}</h2>
+      {formArrival.map((d) => (
+        <div class="deadline-item">
+          <div class="deadline-item__date tabular">{d.display}</div>
+          <div>
+            <div class="deadline-item__label">{d.label}</div>
+            {d.hint && <span class="deadline-item__hint">{d.hint}</span>}
+          </div>
+          <button type="button" class="btn btn--ghost js-calendar-add-deadline"
+                  data-date={d.date}
+                  data-title={d.label}
+                  data-desc={d.hint || ''}>
+            📅 Add to calendar
+          </button>
+        </div>
+      ))}
+    </div>
+
+    <div class="deadlines__group">
+      <h2>{t(lang, 'deadlines.section_filing')}</h2>
+      {filingDeadlines.map((d) => (
+        <div class="deadline-item">
+          <div class="deadline-item__date tabular">{d.display}</div>
+          <div>
+            <div class="deadline-item__label">{d.label}</div>
+            {d.hint && <span class="deadline-item__hint">{d.hint}</span>}
+          </div>
+          <button type="button" class="btn btn--ghost js-calendar-add-deadline"
+                  data-date={d.date}
+                  data-title={d.label}
+                  data-desc={d.hint || ''}>
+            📅 Add to calendar
+          </button>
+        </div>
+      ))}
+    </div>
+  </div>
+</BaseLayout>

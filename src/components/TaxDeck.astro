@@ -2,6 +2,13 @@
 import type { Lang } from '../i18n/ui';
 import { t, taxUrl } from '../i18n/ui';
 import SegmentedStatus from './SegmentedStatus.astro';
+import Estimator from './Estimator.astro';
+
+const ESTIMATOR_TYPE: Record<string, 'arts' | 'pfa' | 'shs'> = {
+  'arts-tax': 'arts',
+  'multnomah-pfa': 'pfa',
+  'metro-shs': 'shs',
+};
 
 interface TaxData {
   data: {
@@ -69,6 +76,10 @@ const { lang, taxes } = Astro.props;
 
         <SegmentedStatus lang={lang} taxId={tax.data.id} compact />
 
+        {ESTIMATOR_TYPE[tax.data.id] && (
+          <Estimator lang={lang} taxId={tax.data.id} type={ESTIMATOR_TYPE[tax.data.id]} />
+        )}
+
         <div class="deck__card-actions">
           <a href={tax.data.filing_url} class="btn btn--primary" target="_blank" rel="noopener">
             {t(lang, 'tax.file_button')} ↗
@@ -76,6 +87,13 @@ const { lang, taxes } = Astro.props;
           <a href={taxUrl(lang, tax.data.slug)} class="btn btn--secondary">
             {t(lang, 'tax.see_details')} →
           </a>
+          <button type="button" class="btn btn--ghost js-calendar-add"
+                  data-tax-id={tax.data.id}
+                  data-tax-name={tax.data.name}
+                  data-tax-deadline={tax.data.deadline}
+                  data-tax-url={`https://bjamba.github.io/pdx-taxes/${lang === 'en' ? '' : lang + '/'}${tax.data.slug}`}>
+            📅 {t(lang, 'calendar.add')}
+          </button>
         </div>
       </li>
     ))}

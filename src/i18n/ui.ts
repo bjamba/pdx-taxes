@@ -100,6 +100,36 @@ export const ui = {
     'jurisdiction.city-of-portland': 'City of Portland',
     'jurisdiction.multnomah-county': 'Multnomah County',
     'jurisdiction.metro': 'Metro',
+
+    /* Estimator */
+    'estimator.toggle': 'Estimate what I might owe',
+    'estimator.toggle_open': 'Hide the estimator',
+    'estimator.estimate': 'Your estimate',
+    'estimator.filing': 'Filing status',
+    'estimator.income': 'Your taxable income',
+    'estimator.income_hint': 'Roughly — this is your Oregon taxable income, with adjustments. We never see this.',
+    'estimator.arts_q': 'You qualify if:',
+    'estimator.arts_yes': 'I\'m a Portland resident, 18+, with $1,000+ income above the federal poverty level.',
+    'estimator.coming_soon': 'Calculator coming soon for this one.',
+
+    /* Aggregate */
+    'aggregate.title': 'Your estimated total this year',
+    'aggregate.subtitle': 'across the taxes that apply to you',
+    'aggregate.cta_open': 'Estimate them all',
+    'aggregate.empty': 'Open an estimator on any card to see a running total here.',
+
+    /* Calendar */
+    'calendar.add': 'Add deadline to calendar',
+    'calendar.add_all': 'Add every deadline to my calendar',
+    'calendar.added': 'Downloaded',
+    'calendar.reminder_note': 'Includes 14-day and 1-day reminders.',
+
+    /* Deadlines page */
+    'deadlines.title': 'Deadlines for tax year 2025',
+    'deadlines.lead': 'Forms you should expect to receive, and the deadlines that follow. Add any of them to your calendar with a single click.',
+    'deadlines.section_forms': 'Forms you may receive',
+    'deadlines.section_filing': 'Filing deadlines',
+    'deadlines.nav_label': 'Deadlines',
   },
   es: {
     'site.name': 'pdx taxes',
@@ -188,6 +218,32 @@ export const ui = {
     'jurisdiction.city-of-portland': 'Ciudad de Portland',
     'jurisdiction.multnomah-county': 'Condado de Multnomah',
     'jurisdiction.metro': 'Metro',
+
+    'estimator.toggle': 'Estimar lo que podría deber',
+    'estimator.toggle_open': 'Ocultar la calculadora',
+    'estimator.estimate': 'Su estimado',
+    'estimator.filing': 'Estado civil',
+    'estimator.income': 'Su ingreso imponible',
+    'estimator.income_hint': 'Aproximadamente — su ingreso imponible de Oregon, con ajustes. Nunca lo vemos.',
+    'estimator.arts_q': 'Califica si:',
+    'estimator.arts_yes': 'Soy residente de Portland, 18+, con $1,000+ de ingresos por encima del nivel federal de pobreza.',
+    'estimator.coming_soon': 'Calculadora próximamente para este.',
+
+    'aggregate.title': 'Su total estimado este año',
+    'aggregate.subtitle': 'entre los impuestos que le aplican',
+    'aggregate.cta_open': 'Estimarlos todos',
+    'aggregate.empty': 'Abra una calculadora en cualquier tarjeta para ver el total aquí.',
+
+    'calendar.add': 'Añadir fecha límite al calendario',
+    'calendar.add_all': 'Añadir todas las fechas a mi calendario',
+    'calendar.added': 'Descargado',
+    'calendar.reminder_note': 'Incluye recordatorios de 14 días y 1 día antes.',
+
+    'deadlines.title': 'Fechas límite para el año fiscal 2025',
+    'deadlines.lead': 'Formularios que debe esperar recibir, y las fechas límite que siguen. Añada cualquiera a su calendario con un solo clic.',
+    'deadlines.section_forms': 'Formularios que puede recibir',
+    'deadlines.section_filing': 'Fechas de presentación',
+    'deadlines.nav_label': 'Fechas límite',
   },
 } as const;
 

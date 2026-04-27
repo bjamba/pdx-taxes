@@ -6,6 +6,7 @@ import TaxDeck from '../../components/TaxDeck.astro';
 import Welcome from '../../components/Welcome.astro';
 import Survey from '../../components/Survey.astro';
 import Result from '../../components/Result.astro';
+import Aggregate from '../../components/Aggregate.astro';
 import Celebration from '../../components/Celebration.astro';
 import { t } from '../../i18n/ui';
 
@@ -40,6 +41,8 @@ const taxes = (await getCollection('taxes-es')).sort(
         <div class="progress__fill" style="width: 0%"></div>
       </div>
     </div>
+
+    <Aggregate lang={lang} />
 
     <TaxDeck lang={lang} taxes={taxes} />
 
