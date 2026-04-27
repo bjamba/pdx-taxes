@@ -1251,7 +1251,6 @@ ul { list-style: none; }
 [data-state="loading"] .js-welcome,
 [data-state="loading"] .js-survey,
 [data-state="loading"] .js-result,
-[data-state="loading"] .js-skipped-banner,
 [data-state="loading"] .js-deck,
 [data-state="loading"] .js-calc-trigger,
 [data-state="loading"] .js-aggregate,
@@ -1265,16 +1264,13 @@ ul { list-style: none; }
  */
 .js-survey,
 .js-result,
-.js-skipped-banner,
 .js-celebration { display: none; }
 [data-state="survey"] .js-survey { display: block; }
 [data-state="result"] .js-result { display: block; }
-[data-state="skipped"] .js-skipped-banner { display: block; }
 [data-state="done"] .js-celebration { display: block; }
 
 [data-state="welcome"] .js-survey,
 [data-state="welcome"] .js-result,
-[data-state="welcome"] .js-skipped-banner,
 [data-state="welcome"] .js-deck,
 [data-state="welcome"] .js-progress,
 [data-state="welcome"] .js-celebration,
@@ -1285,7 +1281,6 @@ ul { list-style: none; }
 
 [data-state="survey"] .js-welcome,
 [data-state="survey"] .js-result,
-[data-state="survey"] .js-skipped-banner,
 [data-state="survey"] .js-deck,
 [data-state="survey"] .js-progress,
 [data-state="survey"] .js-celebration,
@@ -1296,7 +1291,6 @@ ul { list-style: none; }
 
 [data-state="result"] .js-welcome,
 [data-state="result"] .js-survey,
-[data-state="result"] .js-skipped-banner,
 [data-state="result"] .js-celebration { display: none; }
 
 [data-state="skipped"] .js-welcome,
@@ -1307,7 +1301,6 @@ ul { list-style: none; }
 [data-state="done"] .js-welcome,
 [data-state="done"] .js-survey,
 [data-state="done"] .js-result,
-[data-state="done"] .js-skipped-banner,
 [data-state="done"] .js-deck,
 [data-state="done"] .js-progress,
 [data-state="done"] .js-calc-trigger,

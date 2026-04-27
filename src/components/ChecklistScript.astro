@@ -590,8 +590,6 @@
       });
       const editBtn = document.querySelector('.js-result-edit');
       if (editBtn) editBtn.addEventListener('click', () => { remove(KEY_PROFILE); setMain('survey'); });
-      const skippedEdit = document.querySelector('.js-skipped-edit');
-      if (skippedEdit) skippedEdit.addEventListener('click', () => { remove(KEY_PROFILE); setMain('survey'); });
 
       // Persistent view toggle (lives above the deck)
       document.querySelectorAll('.js-view-toggle').forEach((btn) => {
