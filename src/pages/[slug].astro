@@ -1,0 +1,91 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StatusPill from '../components/StatusPill.astro';
+import Disclaimer from '../components/Disclaimer.astro';
+import { t } from '../i18n/ui';
+
+export async function getStaticPaths() {
+  const taxes = await getCollection('taxes-en');
+  return taxes.map((tax) => ({
+    params: { slug: tax.data.slug },
+    props: { tax },
+  }));
+}
+
+const lang = 'en' as const;
+const { tax } = Astro.props;
+const data = tax.data;
+const path = `/${data.slug}`;
+---
+
+<BaseLayout lang={lang} path={path} title={data.name} description={data.summary}>
+  <a href="/" class="detail-back">← {t(lang, 'tax.back')}</a>
+
+  <p class="detail-juris">{t(lang, `jurisdiction.${data.jurisdiction}` as any)}</p>
+  <h1>{data.name}</h1>
+
+  <div class="detail-status-row">
+    <StatusPill lang={lang} taxId={data.id} interactive />
+  </div>
+
+  <p class="lead">{data.summary}</p>
+
+  <Disclaimer lang={lang} />
+
+  <section class="detail-section">
+    <h2>{t(lang, 'tax.who_owes')}</h2>
+    <p>{data.who_owes}</p>
+  </section>
+
+  <section class="detail-section">
+    <dl class="detail-defs">
+      <div>
+        <dt>{t(lang, 'tax.rate')}</dt>
+        <dd>{data.rate_summary}</dd>
+      </div>
+      <div>
+        <dt>{t(lang, 'tax.deadline')}</dt>
+        <dd class="tabular">{data.deadline}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="detail-section">
+    <h2>{t(lang, 'tax.filing')}</h2>
+    <p>{data.filing_summary}</p>
+    <div class="detail-actions">
+      <a href={data.filing_url} class="btn btn--primary" target="_blank" rel="noopener">
+        {t(lang, 'tax.file_button')} →
+      </a>
+    </div>
+  </section>
+
+  {data.friendly_note && (
+    <aside class="callout callout--friendly">
+      <p><strong>{t(lang, 'tax.friendly_note')}.</strong> {data.friendly_note}</p>
+    </aside>
+  )}
+
+  {data.free_filing.length > 0 && (
+    <section class="detail-section">
+      <h2>{t(lang, 'tax.free_filing')}</h2>
+      <ul class="sources-list">
+        {data.free_filing.map((r) => (
+          <li><a href={r.url} target="_blank" rel="noopener">{r.name}</a></li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  <section class="detail-section">
+    <h2>{t(lang, 'tax.sources')}</h2>
+    <ul class="sources-list">
+      {data.sources.map((s) => (
+        <li><a href={s.url} target="_blank" rel="noopener">{s.title}</a></li>
+      ))}
+    </ul>
+  </section>
+
+  <p class="verified">{t(lang, 'tax.last_verified')}: <span class="tabular">{data.last_verified}</span></p>
+</BaseLayout>

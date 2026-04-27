@@ -1,0 +1,43 @@
+id: arts-tax
+slug: arts-tax
+name: Portland Arts Tax
+short_name: Arts Tax
+jurisdiction: city-of-portland
+view: individual
+scope: separate-return
+last_verified: "2026-04-26"
+status: active
+order: 1
+
+summary: A flat $35 tax for Portland residents 18 and older with at least $1,000 in yearly income, used to fund arts education and access programs.
+
+who_owes: |
+  You owe the Arts Tax if you live in Portland, are 18 or older, have $1,000 or more in yearly income from any source, and your household income is above the federal poverty level. If your household is at or below the federal poverty level, you can request a permanent low-income exemption.
+
+rate:
+  type: flat
+  amount_usd: 35
+
+rate_summary: A flat $35 per person, per year.
+
+deadline: "April 15, 2026"
+
+filing_url: https://www.portland.gov/revenue/pay-arts-tax
+filing_summary: |
+  You can file and pay online at the Portland Revenue Division. You don't need a Portland Revenue Online (PRO) account to pay the Arts Tax — you can pay as a guest with just your name, address, and a payment method.
+
+account_required: false
+pin_letter_required: false
+
+friendly_note: |
+  If you miss the April 15 deadline, the late fee is $15 starting April 16, plus another $20 if you're more than six months late.
+
+free_filing:
+  - name: Portland Revenue Online (official)
+    url: https://pro.portland.gov/
+
+sources:
+  - title: Arts Tax — Portland.gov
+    url: https://www.portland.gov/revenue/arts-tax
+  - title: Pay your Arts Tax — Portland.gov
+    url: https://www.portland.gov/revenue/pay-arts-tax

@@ -1,0 +1,20 @@
+---
+import type { Lang } from '../i18n/ui';
+import { langPrefix, t } from '../i18n/ui';
+import LanguageSwitcher from './LanguageSwitcher.astro';
+
+interface Props {
+  lang: Lang;
+  path: string;
+}
+
+const { lang, path } = Astro.props;
+const homeHref = lang === 'en' ? '/' : `/${lang}`;
+---
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <a href={homeHref} class="site-wordmark">{t(lang, 'site.name')}</a>
+    <LanguageSwitcher lang={lang} path={path} />
+  </div>
+</header>

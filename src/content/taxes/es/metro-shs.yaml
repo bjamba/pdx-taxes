@@ -1,0 +1,45 @@
+id: metro-shs
+slug: metro-shs
+name: Servicios de Vivienda de Apoyo de Metro
+short_name: Metro SHS
+jurisdiction: metro
+view: individual
+scope: separate-return
+last_verified: "2026-04-26"
+status: active
+order: 3
+
+summary: Un impuesto sobre el ingreso personal del 1% en la región Metro que financia servicios de vivienda de apoyo para personas sin hogar o en riesgo de quedarse sin hogar.
+
+who_owes: |
+  Debe el impuesto de Servicios de Vivienda de Apoyo (SHS) de Metro si vive en la región Metro (partes de los condados de Multnomah, Washington y Clackamas) y sus ingresos imponibles de Metro superan el umbral — aproximadamente $128,000 para declaración individual o $205,000 para declaración conjunta en el año fiscal 2026. Los umbrales ahora se ajustan por inflación cada año.
+
+rate:
+  type: percent
+  rate_pct: 1.0
+  threshold_single_usd: 128000
+  threshold_joint_usd: 205000
+
+rate_summary: 1% de los ingresos imponibles de Metro por encima del umbral ($128,000 individual / $205,000 conjunta para el año fiscal 2026, ajustado por inflación cada año).
+
+deadline: "15 de abril de 2026"
+
+filing_url: https://pro.portland.gov/
+filing_summary: |
+  Al igual que el PFA de Multnomah, el impuesto Metro SHS es administrado por la División de Ingresos de Portland y se presenta a través de Portland Revenue Online (PRO).
+
+account_required: true
+pin_letter_required: true
+
+friendly_note: |
+  Si ya tiene una cuenta de Portland Revenue Online por declarar el PFA o el Impuesto de las Artes, puede usar la misma cuenta para Metro SHS — no necesita una segunda carta con PIN.
+
+free_filing:
+  - name: Portland Revenue Online (oficial)
+    url: https://pro.portland.gov/
+
+sources:
+  - title: Personal Income Tax Filing — Portland.gov
+    url: https://www.portland.gov/revenue/personal-tax
+  - title: Supportive Housing Services — Metro
+    url: https://www.oregonmetro.gov/public-projects/supportive-housing-services-tax

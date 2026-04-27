@@ -1,0 +1,43 @@
+id: arts-tax
+slug: arts-tax
+name: Impuesto de las Artes de Portland
+short_name: Impuesto de las Artes
+jurisdiction: city-of-portland
+view: individual
+scope: separate-return
+last_verified: "2026-04-26"
+status: active
+order: 1
+
+summary: Un impuesto fijo de $35 para residentes de Portland mayores de 18 años con al menos $1,000 de ingresos anuales, que financia programas de educación y acceso a las artes.
+
+who_owes: |
+  Debe el Impuesto de las Artes si vive en Portland, tiene 18 años o más, tiene $1,000 o más de ingresos anuales de cualquier fuente, y los ingresos de su hogar están por encima del nivel federal de pobreza. Si los ingresos de su hogar están en o por debajo del nivel federal de pobreza, puede solicitar una exención permanente por bajos ingresos.
+
+rate:
+  type: flat
+  amount_usd: 35
+
+rate_summary: Una cuota fija de $35 por persona, por año.
+
+deadline: "15 de abril de 2026"
+
+filing_url: https://www.portland.gov/revenue/pay-arts-tax
+filing_summary: |
+  Puede presentar y pagar en línea en la División de Ingresos de Portland. No necesita una cuenta de Portland Revenue Online (PRO) para pagar el Impuesto de las Artes — puede pagar como invitado solo con su nombre, dirección y método de pago.
+
+account_required: false
+pin_letter_required: false
+
+friendly_note: |
+  Si pierde la fecha límite del 15 de abril, el cargo por mora es de $15 a partir del 16 de abril, más otros $20 si se atrasa más de seis meses.
+
+free_filing:
+  - name: Portland Revenue Online (oficial)
+    url: https://pro.portland.gov/
+
+sources:
+  - title: Arts Tax — Portland.gov
+    url: https://www.portland.gov/revenue/arts-tax
+  - title: Pay your Arts Tax — Portland.gov
+    url: https://www.portland.gov/revenue/pay-arts-tax

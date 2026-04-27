@@ -1,0 +1,40 @@
+---
+import type { Lang } from '../i18n/ui';
+import { languages, t } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  /** Path *within* the locale (e.g. "" for home, "/arts-tax" for a tax page) */
+  path: string;
+}
+
+const { lang, path } = Astro.props;
+---
+
+<div class="lang-switcher">
+  <label for="lang-select" class="sr-only">{t(lang, 'lang.switcher_label')}</label>
+  <select
+    id="lang-select"
+    class="lang-switcher__select"
+    data-current-lang={lang}
+    data-path={path}
+  >
+    {Object.entries(languages).map(([code, label]) => (
+      <option value={code} selected={code === lang}>{label}</option>
+    ))}
+  </select>
+</div>
+
+<script>
+  const select = document.getElementById('lang-select') as HTMLSelectElement | null;
+  if (select) {
+    const path = select.dataset.path ?? '';
+    select.addEventListener('change', () => {
+      const target = select.value;
+      const prefix = target === 'en' ? '' : `/${target}`;
+      // path is the within-locale path: '' for home, '/arts-tax' for detail.
+      const url = `${prefix}${path}` || '/';
+      window.location.href = url;
+    });
+  }
+</script>

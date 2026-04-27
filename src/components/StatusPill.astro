@@ -1,0 +1,45 @@
+---
+import type { Lang } from '../i18n/ui';
+import { t } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  taxId: string;
+  /** If true, render as an interactive button that cycles through statuses. */
+  interactive?: boolean;
+}
+
+const { lang, taxId, interactive = false } = Astro.props;
+
+const labels = {
+  'not-started': t(lang, 'status.not_started'),
+  'in-progress': t(lang, 'status.in_progress'),
+  'done': t(lang, 'status.done'),
+  'not-applicable': t(lang, 'status.not_applicable'),
+};
+
+const tag = interactive ? 'button' : 'span';
+const ariaLabel = interactive ? t(lang, 'status.cycle_help') : undefined;
+---
+
+{interactive ? (
+  <button
+    type="button"
+    class="pill js-status-pill"
+    data-tax-id={taxId}
+    data-labels={JSON.stringify(labels)}
+    aria-label={ariaLabel}
+  >
+    <span class="pill__icon" aria-hidden="true">○</span>
+    <span class="pill__label">{labels['not-started']}</span>
+  </button>
+) : (
+  <span
+    class="pill js-status-pill"
+    data-tax-id={taxId}
+    data-labels={JSON.stringify(labels)}
+  >
+    <span class="pill__icon" aria-hidden="true">○</span>
+    <span class="pill__label">{labels['not-started']}</span>
+  </span>
+)}

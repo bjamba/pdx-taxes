@@ -1,0 +1,131 @@
+---
+// Inlined client script that powers the checklist on home + tax-detail pages.
+// State lives in localStorage only — never transmitted.
+---
+
+<script is:inline>
+  (function () {
+    const STORAGE_KEY = 'pdx-taxes:checklist:v1';
+    const STATUSES = ['not-started', 'in-progress', 'done', 'not-applicable'];
+    const ICONS = {
+      'not-started': '○',
+      'in-progress': '●',
+      'done': '✓',
+      'not-applicable': '—',
+    };
+    const PILL_CLASSES = {
+      'not-started': 'pill',
+      'in-progress': 'pill pill--in-progress',
+      'done': 'pill pill--done',
+      'not-applicable': 'pill pill--not-applicable',
+    };
+
+    function read() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        return (parsed && typeof parsed === 'object' && parsed.items) ? parsed.items : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function write(items) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, items }));
+      } catch {}
+    }
+
+    function clear() {
+      try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    }
+
+    function applyPillState(pill, status, labels) {
+      const isButton = pill.tagName === 'BUTTON';
+      pill.className = (PILL_CLASSES[status] || PILL_CLASSES['not-started']) + (isButton ? ' js-status-pill' : ' js-status-pill');
+      const icon = pill.querySelector('.pill__icon');
+      const label = pill.querySelector('.pill__label');
+      if (icon) icon.textContent = ICONS[status];
+      if (label) label.textContent = labels[status];
+    }
+
+    function renderAllPills() {
+      const items = read();
+      document.querySelectorAll('.js-status-pill').forEach((pill) => {
+        const taxId = pill.getAttribute('data-tax-id');
+        if (!taxId) return;
+        let labels;
+        try {
+          labels = JSON.parse(pill.getAttribute('data-labels') || '{}');
+        } catch { labels = {}; }
+        const current = (items[taxId] && items[taxId].status) || 'not-started';
+        applyPillState(pill, current, labels);
+      });
+      renderProgress();
+    }
+
+    function renderProgress() {
+      const bar = document.querySelector('.js-progress');
+      if (!bar) return;
+      const items = read();
+      const allTaxIds = Array.from(document.querySelectorAll('.js-status-pill'))
+        .map((p) => p.getAttribute('data-tax-id'))
+        .filter(Boolean);
+      // Dedupe (in case a tax appears multiple times)
+      const uniq = Array.from(new Set(allTaxIds));
+      const total = uniq.length;
+      if (total === 0) return;
+      const done = uniq.filter((id) => {
+        const it = items[id];
+        return it && (it.status === 'done' || it.status === 'not-applicable');
+      }).length;
+      const fill = bar.querySelector('.progress-bar__fill');
+      const labelEl = bar.querySelector('.progress-bar__label');
+      const pct = Math.round((done / total) * 100);
+      if (fill) fill.style.width = pct + '%';
+      if (labelEl) labelEl.textContent = done + '/' + total;
+    }
+
+    function cycleStatus(taxId) {
+      const items = read();
+      const current = (items[taxId] && items[taxId].status) || 'not-started';
+      const idx = STATUSES.indexOf(current);
+      const next = STATUSES[(idx + 1) % STATUSES.length];
+      items[taxId] = { status: next, updated_at: new Date().toISOString() };
+      write(items);
+      renderAllPills();
+    }
+
+    function bind() {
+      document.querySelectorAll('button.js-status-pill').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = btn.getAttribute('data-tax-id');
+          if (id) cycleStatus(id);
+        });
+      });
+      const clearBtn = document.querySelector('.js-clear-checklist');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          clear();
+          renderAllPills();
+          const note = document.querySelector('.js-cleared-note');
+          if (note) {
+            note.removeAttribute('hidden');
+            setTimeout(() => note.setAttribute('hidden', ''), 2500);
+          }
+        });
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => { renderAllPills(); bind(); });
+    } else {
+      renderAllPills();
+      bind();
+    }
+  })();
+</script>

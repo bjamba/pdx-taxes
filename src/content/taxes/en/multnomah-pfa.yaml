@@ -1,0 +1,49 @@
+id: multnomah-pfa
+slug: multnomah-pfa
+name: Multnomah County Preschool For All
+short_name: Multnomah PFA
+jurisdiction: multnomah-county
+view: individual
+scope: separate-return
+last_verified: "2026-04-26"
+status: active
+order: 2
+
+summary: A personal income tax for higher-income Multnomah County residents that funds free preschool for three- and four-year-olds in the county.
+
+who_owes: |
+  You owe the Preschool For All (PFA) tax if you live in Multnomah County and your taxable income is above $125,000 (filing single) or $200,000 (filing jointly). Non-residents who earn income from work in Multnomah County may also owe a portion based on the share of their income earned in the county.
+
+rate:
+  type: progressive
+  brackets:
+    - rate_pct: 1.5
+      threshold_single_usd: 125000
+      threshold_joint_usd: 200000
+    - rate_pct: 3.0
+      threshold_single_usd: 250000
+      threshold_joint_usd: 400000
+
+rate_summary: 1.5% on Multnomah County taxable income above $125,000 (single) or $200,000 (joint), plus an additional 1.5% on income above $250,000 (single) or $400,000 (joint).
+
+deadline: "April 15, 2026"
+
+filing_url: https://pro.portland.gov/
+filing_summary: |
+  PFA is administered by the Portland Revenue Division. You file through Portland Revenue Online (PRO), which is the same system you'd use for the Portland Business License Tax and the Metro SHS tax. One account covers all three.
+
+account_required: true
+pin_letter_required: true
+
+friendly_note: |
+  Setting up a Portland Revenue Online account requires a PIN that comes by mail and can take 7–10 days to arrive. If this is your first year filing PFA, request your PIN well before April.
+
+free_filing:
+  - name: Portland Revenue Online (official)
+    url: https://pro.portland.gov/
+
+sources:
+  - title: Multnomah County Preschool For All Personal Income Tax
+    url: https://multco.us/info/multnomah-county-preschool-all-personal-income-tax
+  - title: Personal Income Tax Filing — Portland.gov
+    url: https://www.portland.gov/revenue/personal-tax

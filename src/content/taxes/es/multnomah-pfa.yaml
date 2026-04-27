@@ -1,0 +1,49 @@
+id: multnomah-pfa
+slug: multnomah-pfa
+name: Preescolar Para Todos del Condado de Multnomah
+short_name: PFA de Multnomah
+jurisdiction: multnomah-county
+view: individual
+scope: separate-return
+last_verified: "2026-04-26"
+status: active
+order: 2
+
+summary: Un impuesto sobre el ingreso personal para residentes con ingresos más altos del Condado de Multnomah que financia preescolar gratuito para niños de tres y cuatro años en el condado.
+
+who_owes: |
+  Debe el impuesto Preescolar Para Todos (PFA) si vive en el Condado de Multnomah y sus ingresos imponibles superan los $125,000 (declaración individual) o $200,000 (declaración conjunta). Los no residentes que generan ingresos por trabajo en el Condado de Multnomah también pueden deber una parte basada en la proporción de sus ingresos generados en el condado.
+
+rate:
+  type: progressive
+  brackets:
+    - rate_pct: 1.5
+      threshold_single_usd: 125000
+      threshold_joint_usd: 200000
+    - rate_pct: 3.0
+      threshold_single_usd: 250000
+      threshold_joint_usd: 400000
+
+rate_summary: 1.5% sobre los ingresos imponibles del Condado de Multnomah por encima de $125,000 (individual) o $200,000 (conjunta), más un 1.5% adicional sobre los ingresos por encima de $250,000 (individual) o $400,000 (conjunta).
+
+deadline: "15 de abril de 2026"
+
+filing_url: https://pro.portland.gov/
+filing_summary: |
+  El PFA es administrado por la División de Ingresos de Portland. Se presenta a través de Portland Revenue Online (PRO), el mismo sistema que usaría para el Impuesto de Licencia Comercial de Portland y el impuesto Metro SHS. Una cuenta cubre los tres.
+
+account_required: true
+pin_letter_required: true
+
+friendly_note: |
+  Crear una cuenta de Portland Revenue Online requiere un PIN que llega por correo y puede tardar de 7 a 10 días. Si es su primer año declarando PFA, solicite su PIN con bastante antelación a abril.
+
+free_filing:
+  - name: Portland Revenue Online (oficial)
+    url: https://pro.portland.gov/
+
+sources:
+  - title: Multnomah County Preschool For All Personal Income Tax
+    url: https://multco.us/info/multnomah-county-preschool-all-personal-income-tax
+  - title: Personal Income Tax Filing — Portland.gov
+    url: https://www.portland.gov/revenue/personal-tax

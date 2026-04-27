@@ -1,0 +1,20 @@
+---
+import type { Lang } from '../i18n/ui';
+import { t } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <p>{t(lang, 'footer.disclaimer')}</p>
+    <div class="site-footer__links">
+      <a href="https://github.com/" target="_blank" rel="noopener">{t(lang, 'footer.source')}</a>
+    </div>
+    <p class="site-footer__meta">{t(lang, 'footer.last_updated')}</p>
+  </div>
+</footer>

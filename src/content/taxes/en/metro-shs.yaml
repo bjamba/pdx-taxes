@@ -1,0 +1,45 @@
+id: metro-shs
+slug: metro-shs
+name: Metro Supportive Housing Services
+short_name: Metro SHS
+jurisdiction: metro
+view: individual
+scope: separate-return
+last_verified: "2026-04-26"
+status: active
+order: 3
+
+summary: A 1% personal income tax in the Metro region that funds supportive housing services for people experiencing or at risk of homelessness.
+
+who_owes: |
+  You owe the Metro Supportive Housing Services (SHS) tax if you live in the Metro region (parts of Multnomah, Washington, and Clackamas counties) and your Metro taxable income is above the threshold — about $128,000 for single filers or $205,000 for joint filers in tax year 2026. Thresholds are now adjusted for inflation each year.
+
+rate:
+  type: percent
+  rate_pct: 1.0
+  threshold_single_usd: 128000
+  threshold_joint_usd: 205000
+
+rate_summary: 1% of Metro taxable income above the threshold ($128,000 single / $205,000 joint for tax year 2026, adjusted for inflation each year).
+
+deadline: "April 15, 2026"
+
+filing_url: https://pro.portland.gov/
+filing_summary: |
+  Like the Multnomah PFA, the Metro SHS tax is administered by the Portland Revenue Division and filed through Portland Revenue Online (PRO).
+
+account_required: true
+pin_letter_required: true
+
+friendly_note: |
+  If you already have a Portland Revenue Online account from filing PFA or the Arts Tax, you can use the same account for Metro SHS — no second PIN letter needed.
+
+free_filing:
+  - name: Portland Revenue Online (official)
+    url: https://pro.portland.gov/
+
+sources:
+  - title: Personal Income Tax Filing — Portland.gov
+    url: https://www.portland.gov/revenue/personal-tax
+  - title: Supportive Housing Services — Metro
+    url: https://www.oregonmetro.gov/public-projects/supportive-housing-services-tax

@@ -1,0 +1,14 @@
+---
+import type { Lang } from '../i18n/ui';
+import { t } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<aside class="callout callout--disclaimer" aria-label="Disclaimer">
+  <p>{t(lang, 'disclaimer.short')}</p>
+</aside>
