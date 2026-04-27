@@ -1,6 +1,6 @@
 ---
 import type { Lang } from '../i18n/ui';
-import { t, localeHome, url } from '../i18n/ui';
+import { t, localeHome } from '../i18n/ui';
 import LanguageSwitcher from './LanguageSwitcher.astro';
 import BrandMark from './BrandMark.astro';
 
@@ -11,7 +11,6 @@ interface Props {
 
 const { lang, path } = Astro.props;
 const homeHref = localeHome(lang);
-const deadlinesHref = url(lang === 'en' ? '/deadlines' : `/${lang}/deadlines`);
 ---
 
 <header class="site-header">
@@ -21,7 +20,6 @@ const deadlinesHref = url(lang === 'en' ? '/deadlines' : `/${lang}/deadlines`);
       <span class="brand-name">{t(lang, 'site.name')}</span>
     </a>
 
-    <!-- Live status — total + progress. Hidden on detail / deadlines pages, populated by JS on home. -->
     <div class="status-badges js-status-badges" hidden>
       <div class="status-badges__total js-status-total" hidden>
         <span class="status-badges__label">{t(lang, 'header.total')}</span>
@@ -35,9 +33,6 @@ const deadlinesHref = url(lang === 'en' ? '/deadlines' : `/${lang}/deadlines`);
       </div>
     </div>
 
-    <nav class="site-nav" aria-label="Primary">
-      <a href={deadlinesHref} class="site-nav__link">{t(lang, 'deadlines.nav_label')}</a>
-    </nav>
     <LanguageSwitcher lang={lang} path={path} />
   </div>
 </header>

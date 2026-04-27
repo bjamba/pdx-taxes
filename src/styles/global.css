@@ -1716,6 +1716,21 @@ ul { list-style: none; }
   justify-content: center;
 }
 
+/* ─── Action cards row (Tax status / Deadlines) ───────── */
+
+.action-cards {
+  display: grid;
+  gap: var(--space-4);
+  margin: var(--space-6) 0;
+}
+.action-cards .calc-trigger {
+  margin: 0;        /* grid handles spacing */
+  height: 100%;
+}
+@media (min-width: 640px) {
+  .action-cards { grid-template-columns: 1fr 1fr; }
+}
+
 /* ─── Calc trigger (the button that opens the modal) ────── */
 
 .calc-trigger {
@@ -1785,6 +1800,19 @@ ul { list-style: none; }
   transition: transform 200ms ease-out;
 }
 .calc-trigger:hover .calc-trigger__arrow { transform: translateX(4px); }
+
+/* Deadlines card uses the same shape but with no underline (it's a real link) */
+.calc-trigger--deadlines {
+  text-decoration: none;
+  color: var(--ink);
+}
+.calc-trigger--deadlines:hover {
+  color: var(--ink);
+  text-decoration: none;
+}
+.calc-trigger--deadlines::before {
+  background: linear-gradient(90deg, var(--metro), var(--multnomah), var(--portland));
+}
 
 /* ─── Calc modal ─────────────────────────────────────────── */
 

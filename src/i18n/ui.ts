@@ -137,6 +137,8 @@ export const ui = {
     'deadlines.section_forms': 'Forms you may receive',
     'deadlines.section_filing': 'Filing deadlines',
     'deadlines.nav_label': 'Deadlines',
+    'deadlines.card_title': 'Save tax deadlines to calendar',
+    'deadlines.card_lead': 'Download .ics reminders for filing dates and the forms you\'ll receive in the mail.',
   },
   es: {
     'site.name': 'pdx taxes',
@@ -256,6 +258,8 @@ export const ui = {
     'deadlines.section_forms': 'Formularios que puede recibir',
     'deadlines.section_filing': 'Fechas de presentación',
     'deadlines.nav_label': 'Fechas límite',
+    'deadlines.card_title': 'Guardar fechas en mi calendario',
+    'deadlines.card_lead': 'Descargue recordatorios .ics para fechas de presentación y formularios que llegarán por correo.',
   },
 } as const;
 

@@ -1,0 +1,19 @@
+---
+import type { Lang } from '../i18n/ui';
+import { t, url } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const deadlinesHref = url(lang === 'en' ? '/deadlines' : `/${lang}/deadlines`);
+---
+
+<a href={deadlinesHref} class="calc-trigger calc-trigger--deadlines">
+  <span class="calc-trigger__icon" aria-hidden="true">📅</span>
+  <span class="calc-trigger__text">
+    <span class="calc-trigger__title">{t(lang, 'deadlines.card_title')}</span>
+    <span class="calc-trigger__lead">{t(lang, 'deadlines.card_lead')}</span>
+  </span>
+</a>
