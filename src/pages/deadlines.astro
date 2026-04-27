@@ -6,27 +6,26 @@ import { t } from '../i18n/ui';
 const lang = 'en' as const;
 
 interface Deadline {
-  date: string;          // ISO YYYY-MM-DD
-  display: string;       // human-readable
-  label: string;         // what it is
+  date: string;
+  display: string;
+  label: string;
   hint?: string;
-  remindersDays: number[];
 }
 
 const formArrival: Deadline[] = [
-  { date: '2026-01-31', display: 'January 31, 2026', label: 'W-2 forms from your employer', hint: 'Employers must send by this date.', remindersDays: [3] },
-  { date: '2026-01-31', display: 'January 31, 2026', label: '1099-NEC for contractors', hint: 'Self-employed? Expect this from each client paying you $600+.', remindersDays: [3] },
-  { date: '2026-01-31', display: 'January 31, 2026', label: '1099-MISC, 1099-INT, 1099-DIV', hint: 'Bank interest, dividends, miscellaneous income.', remindersDays: [3] },
-  { date: '2026-02-15', display: 'February 15, 2026', label: '1099-B from brokerages', hint: 'Investment sales summary. Some brokers send later.', remindersDays: [3] },
-  { date: '2026-03-15', display: 'March 15, 2026', label: 'K-1 from partnerships / S-corps', hint: 'If you have a small business stake.', remindersDays: [7] },
+  { date: '2026-01-31', display: 'January 31, 2026', label: 'W-2 forms from your employer', hint: 'Employers must send by this date.' },
+  { date: '2026-01-31', display: 'January 31, 2026', label: '1099-NEC for contractors', hint: 'Self-employed? Expect this from each client paying you $600+.' },
+  { date: '2026-01-31', display: 'January 31, 2026', label: '1099-MISC, 1099-INT, 1099-DIV', hint: 'Bank interest, dividends, miscellaneous income.' },
+  { date: '2026-02-15', display: 'February 15, 2026', label: '1099-B from brokerages', hint: 'Investment sales summary. Some brokers send later.' },
+  { date: '2026-03-15', display: 'March 15, 2026', label: 'K-1 from partnerships / S-corps', hint: 'If you have a small business stake.' },
 ];
 
 const filingDeadlines: Deadline[] = [
-  { date: '2026-04-15', display: 'April 15, 2026', label: 'Federal income tax', remindersDays: [30, 14, 1] },
-  { date: '2026-04-15', display: 'April 15, 2026', label: 'Oregon state income tax', remindersDays: [30, 14, 1] },
-  { date: '2026-04-15', display: 'April 15, 2026', label: 'Portland Arts Tax', hint: 'A flat $35 if you qualify.', remindersDays: [30, 14, 1] },
-  { date: '2026-04-15', display: 'April 15, 2026', label: 'Multnomah Preschool For All (PFA)', remindersDays: [30, 14, 1] },
-  { date: '2026-04-15', display: 'April 15, 2026', label: 'Metro Supportive Housing Services (SHS)', remindersDays: [30, 14, 1] },
+  { date: '2026-04-15', display: 'April 15, 2026', label: 'Federal income tax' },
+  { date: '2026-04-15', display: 'April 15, 2026', label: 'Oregon state income tax' },
+  { date: '2026-04-15', display: 'April 15, 2026', label: 'Portland Arts Tax', hint: 'A flat $35 if you qualify.' },
+  { date: '2026-04-15', display: 'April 15, 2026', label: 'Multnomah Preschool For All (PFA)' },
+  { date: '2026-04-15', display: 'April 15, 2026', label: 'Metro Supportive Housing Services (SHS)' },
 ];
 ---
 
@@ -36,43 +35,73 @@ const filingDeadlines: Deadline[] = [
 
   <Disclaimer lang={lang} />
 
-  <div class="deadlines">
-    <div class="deadlines__group">
-      <h2>{t(lang, 'deadlines.section_forms')}</h2>
-      {formArrival.map((d) => (
-        <div class="deadline-item">
-          <div class="deadline-item__date tabular">{d.display}</div>
-          <div>
-            <div class="deadline-item__label">{d.label}</div>
-            {d.hint && <span class="deadline-item__hint">{d.hint}</span>}
-          </div>
-          <button type="button" class="btn btn--ghost js-calendar-add-deadline"
-                  data-date={d.date}
-                  data-title={d.label}
-                  data-desc={d.hint || ''}>
-            📅 Add to calendar
-          </button>
-        </div>
-      ))}
+  <div class="deadlines js-deadlines">
+    <div class="deadlines__bulk">
+      <div class="deadlines__bulk-actions">
+        <button type="button" class="btn btn--ghost js-deadlines-select-all">Select all</button>
+        <button type="button" class="btn btn--ghost js-deadlines-select-none">Clear selection</button>
+      </div>
+      <button type="button" class="btn btn--primary js-deadlines-download" disabled>
+        📅 <span class="js-deadlines-download-label">Download <span class="js-deadlines-count">0</span> selected</span>
+      </button>
     </div>
 
     <div class="deadlines__group">
-      <h2>{t(lang, 'deadlines.section_filing')}</h2>
-      {filingDeadlines.map((d) => (
-        <div class="deadline-item">
-          <div class="deadline-item__date tabular">{d.display}</div>
-          <div>
-            <div class="deadline-item__label">{d.label}</div>
-            {d.hint && <span class="deadline-item__hint">{d.hint}</span>}
-          </div>
-          <button type="button" class="btn btn--ghost js-calendar-add-deadline"
-                  data-date={d.date}
-                  data-title={d.label}
-                  data-desc={d.hint || ''}>
-            📅 Add to calendar
-          </button>
-        </div>
-      ))}
+      <div class="deadlines__group-head">
+        <h2>{t(lang, 'deadlines.section_forms')}</h2>
+        <button type="button" class="btn btn--ghost js-deadlines-select-group" data-group="forms">Select group</button>
+      </div>
+      <ul class="deadlines__list">
+        {formArrival.map((d, i) => (
+          <li class="deadline-row">
+            <label class="deadline-row__label">
+              <input type="checkbox" class="deadline-row__check js-deadline-check"
+                     data-date={d.date}
+                     data-title={d.label}
+                     data-desc={d.hint || ''}
+                     data-group="forms" />
+              <span class="deadline-row__main">
+                <span class="deadline-row__date tabular">{d.display}</span>
+                <span class="deadline-row__label-text">{d.label}</span>
+                {d.hint && <span class="deadline-row__hint">{d.hint}</span>}
+              </span>
+            </label>
+            <button type="button" class="btn btn--ghost btn--small js-calendar-add-deadline"
+                    data-date={d.date}
+                    data-title={d.label}
+                    data-desc={d.hint || ''}>📅 Add</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <div class="deadlines__group">
+      <div class="deadlines__group-head">
+        <h2>{t(lang, 'deadlines.section_filing')}</h2>
+        <button type="button" class="btn btn--ghost js-deadlines-select-group" data-group="filing">Select group</button>
+      </div>
+      <ul class="deadlines__list">
+        {filingDeadlines.map((d) => (
+          <li class="deadline-row">
+            <label class="deadline-row__label">
+              <input type="checkbox" class="deadline-row__check js-deadline-check"
+                     data-date={d.date}
+                     data-title={d.label}
+                     data-desc={d.hint || ''}
+                     data-group="filing" />
+              <span class="deadline-row__main">
+                <span class="deadline-row__date tabular">{d.display}</span>
+                <span class="deadline-row__label-text">{d.label}</span>
+                {d.hint && <span class="deadline-row__hint">{d.hint}</span>}
+              </span>
+            </label>
+            <button type="button" class="btn btn--ghost btn--small js-calendar-add-deadline"
+                    data-date={d.date}
+                    data-title={d.label}
+                    data-desc={d.hint || ''}>📅 Add</button>
+          </li>
+        ))}
+      </ul>
     </div>
   </div>
 </BaseLayout>

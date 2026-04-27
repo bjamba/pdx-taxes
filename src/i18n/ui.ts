@@ -58,6 +58,11 @@ export const ui = {
     'skipped.eyebrow': 'Showing all taxes',
     'skipped.cta': 'Want a personalized list?',
 
+    /* View toggle */
+    'view.label': 'Showing',
+    'view.for_me': 'For me',
+    'view.all': 'All taxes',
+
     /* Tax card / detail */
     'tax.see_details': 'See details',
     'tax.who_owes': 'Who owes this',
@@ -180,6 +185,10 @@ export const ui = {
 
     'skipped.eyebrow': 'Mostrando todos los impuestos',
     'skipped.cta': '¿Quiere una lista personalizada?',
+
+    'view.label': 'Mostrando',
+    'view.for_me': 'Para mí',
+    'view.all': 'Todos',
 
     'tax.see_details': 'Ver detalles',
     'tax.who_owes': 'Quién lo debe',

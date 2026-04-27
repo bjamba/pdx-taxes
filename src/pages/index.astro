@@ -6,6 +6,7 @@ import TaxDeck from '../components/TaxDeck.astro';
 import Welcome from '../components/Welcome.astro';
 import Survey from '../components/Survey.astro';
 import Result from '../components/Result.astro';
+import ViewToggle from '../components/ViewToggle.astro';
 import CalcPanel from '../components/CalcPanel.astro';
 import Aggregate from '../components/Aggregate.astro';
 import Celebration from '../components/Celebration.astro';
@@ -46,6 +47,7 @@ const taxes = (await getCollection('taxes-en')).sort(
     <CalcPanel lang={lang} />
     <Aggregate lang={lang} />
 
+    <ViewToggle lang={lang} />
     <TaxDeck lang={lang} taxes={taxes} />
 
     <p class="clear-row js-clear-row">

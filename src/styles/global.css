@@ -1166,6 +1166,7 @@ ul { list-style: none; }
 [data-state="welcome"] .js-celebration,
 [data-state="welcome"] .js-aggregate,
 [data-state="welcome"] .js-calc-panel,
+[data-state="welcome"] .js-view-toggle-row,
 [data-state="welcome"] .js-clear-row { display: none; }
 
 [data-state="survey"] .js-welcome,
@@ -1176,6 +1177,7 @@ ul { list-style: none; }
 [data-state="survey"] .js-celebration,
 [data-state="survey"] .js-aggregate,
 [data-state="survey"] .js-calc-panel,
+[data-state="survey"] .js-view-toggle-row,
 [data-state="survey"] .js-clear-row { display: none; }
 
 [data-state="result"] .js-welcome,
@@ -1195,6 +1197,7 @@ ul { list-style: none; }
 [data-state="done"] .js-deck,
 [data-state="done"] .js-progress,
 [data-state="done"] .js-calc-panel,
+[data-state="done"] .js-view-toggle-row,
 [data-state="done"] .js-aggregate { display: none; }
 
 /* When filtering by profile, hide cards that don't apply */
@@ -1208,6 +1211,59 @@ ul { list-style: none; }
   gap: var(--space-3);
   align-items: center;
   flex-wrap: wrap;
+}
+
+/* ─── View toggle (For me / All) ────────────────────────────── */
+
+.view-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-6) 0 var(--space-3);
+  flex-wrap: wrap;
+}
+.view-toggle__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.view-toggle__buttons {
+  display: inline-flex;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.view-toggle__btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-right: 2px solid var(--ink);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+  padding: 8px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.view-toggle__btn:last-child { border-right: 0; }
+.view-toggle__btn:hover { background: var(--surface); }
+.view-toggle__btn:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+  z-index: 1;
+}
+.view-toggle__btn[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 /* ─── Card deck ────────────────────────────────────────────────── */
@@ -1488,14 +1544,11 @@ ul { list-style: none; }
   font-size: 16px;
   margin: 0;
 }
+/* Both inputs stack vertically with the same width — clean & predictable. */
 .calc-panel__inputs {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-4);
-  align-items: start;
-}
-@media (max-width: 600px) {
-  .calc-panel__inputs { grid-template-columns: 1fr; }
+  gap: var(--space-5);
+  --calc-control-h: 56px;
 }
 .calc-panel__field {
   border: 0;
@@ -1513,24 +1566,31 @@ ul { list-style: none; }
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+
+/* Filing radios — segmented control, full width, same height as income input */
 .calc-panel__radios {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   border: 2px solid var(--ink);
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--paper);
   box-shadow: 0 3px 0 var(--ink);
+  height: var(--calc-control-h);
 }
 .calc-panel__radio {
   position: relative;
   display: flex;
   align-items: center;
-  padding: 10px 16px;
+  justify-content: center;
+  padding: 0 var(--space-4);
   cursor: pointer;
   font-weight: 600;
   font-size: 15px;
   border-right: 2px solid var(--ink);
   transition: background 120ms ease-out, color 120ms ease-out;
+  text-align: center;
+  line-height: 1.2;
 }
 .calc-panel__radio:last-child { border-right: 0; }
 .calc-panel__radio input { position: absolute; opacity: 0; pointer-events: none; }
@@ -1544,6 +1604,8 @@ ul { list-style: none; }
   outline-offset: -3px;
   z-index: 1;
 }
+
+/* Income input — same height as filing radios above */
 .calc-panel__input-wrap {
   display: flex;
   align-items: stretch;
@@ -1553,13 +1615,14 @@ ul { list-style: none; }
   overflow: hidden;
   box-shadow: 0 3px 0 var(--ink);
   position: relative;
+  height: var(--calc-control-h);
 }
 .calc-panel__currency {
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-4);
   background: var(--ink);
   color: var(--paper);
   font-weight: 700;
-  font-size: 18px;
+  font-size: 22px;
   display: flex;
   align-items: center;
   font-family: var(--font-display);
@@ -1567,14 +1630,20 @@ ul { list-style: none; }
 .calc-panel__input {
   flex: 1;
   border: 0;
-  padding: 14px 16px;
+  padding: 0 var(--space-4);
   font: inherit;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   background: var(--paper);
   color: var(--ink);
   font-variant-numeric: tabular-nums;
   min-width: 0;
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+.calc-panel__input::placeholder {
+  color: var(--ink-faint);
+  font-weight: 500;
 }
 .calc-panel__input:focus-visible {
   outline: 3px solid var(--focus-ring);
@@ -1585,12 +1654,13 @@ ul { list-style: none; }
   background: transparent;
   border: 0;
   color: var(--ink-faint);
-  font-size: 24px;
+  font-size: 26px;
   padding: 0 var(--space-4);
   cursor: pointer;
   font-weight: 700;
   display: flex;
   align-items: center;
+  line-height: 1;
 }
 .calc-panel__clear:hover { color: var(--ink); background: var(--surface); }
 .calc-panel__hint {
@@ -1874,9 +1944,30 @@ ul { list-style: none; }
 
 /* ─── Deadlines page ───────────────────────────────────────── */
 
-.deadlines {
-  margin-top: var(--space-6);
+.deadlines { margin-top: var(--space-6); }
+
+.deadlines__bulk {
+  position: sticky;
+  top: var(--space-3);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 2.5px solid var(--ink);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: 0 5px 0 var(--ink);
+  margin-bottom: var(--space-6);
 }
+.deadlines__bulk-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .deadlines__group {
   background: var(--surface);
   border: 2px solid var(--ink);
@@ -1885,40 +1976,104 @@ ul { list-style: none; }
   margin-bottom: var(--space-6);
   box-shadow: 0 4px 0 var(--ink);
 }
-.deadlines__group h2 {
-  font-family: var(--font-display);
-  margin: 0 0 var(--space-4);
-}
-.deadline-item {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: var(--space-4);
+.deadlines__group-head {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+.deadlines__group-head h2 {
+  font-family: var(--font-display);
+  margin: 0;
+}
+.deadlines__list {
+  display: grid;
+  gap: 0;
+}
+.deadline-row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-3);
   padding: var(--space-3) 0;
   border-top: 1px dashed var(--surface-edge);
 }
-.deadline-item:first-child { border-top: 0; }
-@media (max-width: 540px) {
-  .deadline-item {
-    grid-template-columns: 1fr;
-    gap: var(--space-2);
-  }
+.deadline-row:first-child { border-top: 0; padding-top: 0; }
+.deadline-row__label {
+  flex: 1;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  transition: background 120ms ease-out, border-color 120ms ease-out;
 }
-.deadline-item__date {
+.deadline-row__label:hover {
+  background: var(--paper);
+  border-color: var(--surface-edge);
+}
+.deadline-row__check {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 4px;
+  position: relative;
+  transition: background 120ms ease-out;
+}
+.deadline-row__check:checked {
+  background: var(--ink);
+}
+.deadline-row__check:checked::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: solid var(--paper);
+  border-width: 0 0 3px 3px;
+  transform: rotate(-45deg) translate(1px, -2px);
+  height: 6px;
+}
+.deadline-row__check:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.deadline-row__label:has(.deadline-row__check:checked) {
+  background: var(--portland-soft);
+  border-color: var(--portland);
+}
+.deadline-row__main {
+  display: grid;
+  gap: 2px;
+}
+.deadline-row__date {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.01em;
-  min-width: 100px;
 }
-.deadline-item__label {
+.deadline-row__label-text {
   font-size: 16px;
+  font-weight: 500;
   color: var(--ink);
 }
-.deadline-item__hint {
-  display: block;
+.deadline-row__hint {
   font-size: 13px;
   color: var(--ink-soft);
-  margin-top: 2px;
+}
+
+.btn--small {
+  font-size: 13px;
+  padding: 8px 12px;
+  min-height: 36px;
+  border-width: 1.5px;
 }

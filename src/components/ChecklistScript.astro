@@ -137,6 +137,20 @@
         ensureDeckActive(deck);
       }
 
+      // View toggle button states
+      const filtered = profile && !profile.showAll;
+      document.querySelectorAll('.js-view-toggle').forEach((btn) => {
+        const target = btn.getAttribute('data-view');
+        const active = (target === 'for-me' && filtered) || (target === 'all' && !filtered);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      // Disable "For me" if user has no preferences saved (skipped without answering)
+      const forMeBtn = document.querySelector('.js-view-toggle[data-view="for-me"]');
+      if (forMeBtn) {
+        const hasPrefs = profile && (profile.residency || profile.filing || profile.income);
+        forMeBtn.toggleAttribute('disabled', false); // always clickable; clicking with no prefs sends to survey
+      }
+
       if (state === 'result') renderResultBanner(profile);
     }
 
@@ -384,14 +398,15 @@
         const r = results[id];
         let state;
         let trailing = '';
-        if (r.state === 'na') { state = 'na'; }
+        if (r.state === 'na') { state = 'na'; trailing = stateDict['na']; }
         else if (r.state === 'computed') { state = 'computed'; total += r.amount; anyComputed = true; trailing = fmtUSD(Math.ceil(r.amount)); }
         else if (r.state === 'below') { state = 'below'; trailing = '$0'; }
         else { state = 'not-yet'; trailing = stateDict['not-yet']; }
         const chip = document.createElement('span');
         chip.className = 'agg-chip';
         chip.setAttribute('data-state', state);
-        chip.innerHTML = `<span class="agg-chip__dot" aria-hidden="true"></span>${namesDict[id]} <span class="agg-chip__amount">${trailing}</span>`;
+        chip.setAttribute('data-tax-id', id);
+        chip.innerHTML = `<span class="agg-chip__dot" aria-hidden="true"></span><span class="agg-chip__name">${namesDict[id]}</span><span class="agg-chip__amount">${trailing}</span>`;
         chipsEl.appendChild(chip);
       });
 
@@ -540,7 +555,12 @@
       const startBtn = document.querySelector('.js-welcome-start');
       if (startBtn) startBtn.addEventListener('click', () => setMain('survey'));
       const skipBtn = document.querySelector('.js-welcome-skip');
-      if (skipBtn) skipBtn.addEventListener('click', () => { writeProfile({ showAll: true }); renderAll(); scrollToTopOfDeck(); });
+      if (skipBtn) skipBtn.addEventListener('click', () => {
+        // No survey answers yet — pure "show all" with no other context.
+        writeProfile({ showAll: true });
+        renderAll();
+        scrollToTopOfDeck();
+      });
 
       // Survey
       const form = document.querySelector('.js-survey-form');
@@ -567,13 +587,36 @@
         if (back) back.addEventListener('click', () => { writeProfile({ showAll: true }); renderAll(); scrollToTopOfDeck(); });
       }
 
-      // Result banner
+      // Result banner — preserve original profile fields when adding showAll
       const showAllBtn = document.querySelector('.js-result-show-all');
-      if (showAllBtn) showAllBtn.addEventListener('click', () => { writeProfile({ showAll: true }); renderAll(); });
+      if (showAllBtn) showAllBtn.addEventListener('click', () => {
+        const cur = readProfile() || {};
+        writeProfile({ ...cur, showAll: true });
+        renderAll();
+      });
       const editBtn = document.querySelector('.js-result-edit');
       if (editBtn) editBtn.addEventListener('click', () => { remove(KEY_PROFILE); setMain('survey'); });
       const skippedEdit = document.querySelector('.js-skipped-edit');
       if (skippedEdit) skippedEdit.addEventListener('click', () => { remove(KEY_PROFILE); setMain('survey'); });
+
+      // Persistent view toggle (lives above the deck)
+      document.querySelectorAll('.js-view-toggle').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-view'); // 'for-me' | 'all'
+          const cur = readProfile() || {};
+          if (target === 'all') {
+            writeProfile({ ...cur, showAll: true });
+          } else {
+            // Switching back to filtered — drop showAll, keep the rest. If
+            // there's nothing else (e.g. user originally skipped), reset to
+            // welcome so they can answer questions.
+            const { showAll, ...rest } = cur;
+            if (rest && rest.residency) writeProfile(rest);
+            else { remove(KEY_PROFILE); setMain('survey'); }
+          }
+          renderAll();
+        });
+      });
 
       // Clear progress
       const clearBtn = document.querySelector('.js-clear-checklist');
@@ -634,7 +677,7 @@
           flashCalendarFeedback(btn);
         });
       });
-      // Deadlines page rows
+      // Deadlines page — single row download
       document.querySelectorAll('.js-calendar-add-deadline').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -645,6 +688,54 @@
           flashCalendarFeedback(btn);
         });
       });
+
+      // Deadlines page — checkbox selection + bulk download
+      const dlPage = document.querySelector('.js-deadlines');
+      if (dlPage) {
+        const downloadBtn = dlPage.querySelector('.js-deadlines-download');
+        const countEl = dlPage.querySelector('.js-deadlines-count');
+        const updateSelectionUI = () => {
+          const checked = dlPage.querySelectorAll('.js-deadline-check:checked');
+          if (countEl) countEl.textContent = String(checked.length);
+          if (downloadBtn) downloadBtn.toggleAttribute('disabled', checked.length === 0);
+        };
+        dlPage.querySelectorAll('.js-deadline-check').forEach((cb) => {
+          cb.addEventListener('change', updateSelectionUI);
+        });
+        const selectAll = dlPage.querySelector('.js-deadlines-select-all');
+        if (selectAll) selectAll.addEventListener('click', () => {
+          dlPage.querySelectorAll('.js-deadline-check').forEach((cb) => cb.checked = true);
+          updateSelectionUI();
+        });
+        const selectNone = dlPage.querySelector('.js-deadlines-select-none');
+        if (selectNone) selectNone.addEventListener('click', () => {
+          dlPage.querySelectorAll('.js-deadline-check').forEach((cb) => cb.checked = false);
+          updateSelectionUI();
+        });
+        dlPage.querySelectorAll('.js-deadlines-select-group').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const group = btn.getAttribute('data-group');
+            dlPage.querySelectorAll(`.js-deadline-check[data-group="${group}"]`).forEach((cb) => cb.checked = true);
+            updateSelectionUI();
+          });
+        });
+        if (downloadBtn) {
+          downloadBtn.addEventListener('click', () => {
+            const events = [];
+            dlPage.querySelectorAll('.js-deadline-check:checked').forEach((cb) => {
+              const date = cb.getAttribute('data-date');
+              const title = cb.getAttribute('data-title') || 'Deadline';
+              const desc = cb.getAttribute('data-desc') || '';
+              if (!date) return;
+              events.push({ uid: `${title}-${date}`, date, title, description: desc, remindersDays: [14, 1] });
+            });
+            if (events.length === 0) return;
+            downloadICS('pdx-taxes-deadlines.ics', events);
+            flashCalendarFeedback(downloadBtn);
+          });
+        }
+        updateSelectionUI();
+      }
     }
 
     function init() {
