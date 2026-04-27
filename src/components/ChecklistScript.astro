@@ -91,27 +91,93 @@
       const { state, profile } = deriveState();
       main.setAttribute('data-state', state);
 
-      // Filter tax cards based on profile
-      const list = document.querySelector('.js-tax-list');
-      if (list) {
+      // Filter deck cards based on profile
+      const deck = document.querySelector('.js-deck');
+      if (deck) {
         if (profile && !profile.showAll) {
-          list.setAttribute('data-filter', 'on');
-          list.querySelectorAll('[data-progress-id]').forEach((card) => {
+          deck.setAttribute('data-filter', 'on');
+          deck.querySelectorAll('.deck__card').forEach((card) => {
             const id = card.getAttribute('data-progress-id');
-            card.setAttribute('data-applies', appliesTo(id, profile) ? 'true' : 'false');
+            const applies = appliesTo(id, profile);
+            card.setAttribute('data-applies', applies ? 'true' : 'false');
+          });
+          deck.querySelectorAll('.deck__dots > li').forEach((li, i) => {
+            const card = deck.querySelector(`.deck__card[data-deck-index="${i}"]`);
+            if (card) li.setAttribute('data-applies', card.getAttribute('data-applies') || 'true');
           });
         } else {
-          list.removeAttribute('data-filter');
-          list.querySelectorAll('[data-progress-id]').forEach((card) => {
-            card.setAttribute('data-applies', 'true');
-          });
+          deck.removeAttribute('data-filter');
+          deck.querySelectorAll('.deck__card').forEach((card) => card.setAttribute('data-applies', 'true'));
+          deck.querySelectorAll('.deck__dots > li').forEach((li) => li.setAttribute('data-applies', 'true'));
         }
+        ensureDeckActive(deck);
       }
 
-      // Result banner copy
       if (state === 'result') {
         renderResultBanner(profile);
       }
+    }
+
+    /* Make sure the active deck card is one that's currently visible (applies=true). */
+    function ensureDeckActive(deck) {
+      const cards = Array.from(deck.querySelectorAll('.deck__card'));
+      const visible = cards.filter((c) => (c.getAttribute('data-applies') || 'true') !== 'false');
+      if (visible.length === 0) {
+        deck.setAttribute('data-empty', 'true');
+        return;
+      }
+      deck.setAttribute('data-empty', 'false');
+      const activeIdx = cards.findIndex((c) => c.classList.contains('is-active'));
+      const active = activeIdx >= 0 ? cards[activeIdx] : null;
+      if (!active || (active.getAttribute('data-applies') || 'true') === 'false') {
+        cards.forEach((c) => c.classList.remove('is-active'));
+        visible[0].classList.add('is-active');
+      }
+      updateDeckChrome(deck);
+    }
+
+    function updateDeckChrome(deck) {
+      const cards = Array.from(deck.querySelectorAll('.deck__card'));
+      const visible = cards.filter((c) => (c.getAttribute('data-applies') || 'true') !== 'false');
+      const activeIdx = cards.findIndex((c) => c.classList.contains('is-active'));
+      const visibleActiveIdx = visible.findIndex((c) => c.classList.contains('is-active'));
+      // aria-hidden
+      cards.forEach((c) => {
+        c.setAttribute('aria-hidden', c.classList.contains('is-active') ? 'false' : 'true');
+      });
+      // dots
+      deck.querySelectorAll('.deck__dot').forEach((dot, i) => {
+        dot.classList.toggle('is-active', i === activeIdx);
+      });
+      // prev/next disabled
+      const prev = deck.querySelector('.js-deck-prev');
+      const next = deck.querySelector('.js-deck-next');
+      if (prev) prev.toggleAttribute('disabled', visibleActiveIdx <= 0);
+      if (next) next.toggleAttribute('disabled', visibleActiveIdx === -1 || visibleActiveIdx >= visible.length - 1);
+    }
+
+    function navDeck(delta) {
+      const deck = document.querySelector('.js-deck');
+      if (!deck) return;
+      const cards = Array.from(deck.querySelectorAll('.deck__card'));
+      const visible = cards.filter((c) => (c.getAttribute('data-applies') || 'true') !== 'false');
+      if (visible.length === 0) return;
+      const currentVisibleIdx = visible.findIndex((c) => c.classList.contains('is-active'));
+      const nextVisibleIdx = Math.max(0, Math.min(visible.length - 1, currentVisibleIdx + delta));
+      cards.forEach((c) => c.classList.remove('is-active'));
+      visible[nextVisibleIdx].classList.add('is-active');
+      updateDeckChrome(deck);
+    }
+
+    function gotoDeck(idx) {
+      const deck = document.querySelector('.js-deck');
+      if (!deck) return;
+      const cards = Array.from(deck.querySelectorAll('.deck__card'));
+      const target = cards[idx];
+      if (!target || (target.getAttribute('data-applies') || 'true') === 'false') return;
+      cards.forEach((c) => c.classList.remove('is-active'));
+      target.classList.add('is-active');
+      updateDeckChrome(deck);
     }
 
     function renderResultBanner(profile) {
@@ -187,21 +253,10 @@
         const taxId = root.getAttribute('data-tax-id');
         if (!taxId) return;
         const status = getStatus(taxId);
-        const seg = root.querySelector('.js-segmented');
-        const naToggle = root.querySelector('.js-status-na');
-        const naActive = root.querySelector('.js-status-na-active');
-        if (!seg || !naToggle || !naActive) return;
-        if (status === 'not-applicable') {
-          seg.setAttribute('hidden', ''); naToggle.setAttribute('hidden', '');
-          naActive.removeAttribute('hidden');
-        } else {
-          seg.removeAttribute('hidden'); naToggle.removeAttribute('hidden');
-          naActive.setAttribute('hidden', '');
-          root.querySelectorAll('.js-status-btn').forEach((btn) => {
-            const s = btn.getAttribute('data-status');
-            btn.setAttribute('aria-pressed', s === status ? 'true' : 'false');
-          });
-        }
+        root.querySelectorAll('.js-status-btn').forEach((btn) => {
+          const s = btn.getAttribute('data-status');
+          btn.setAttribute('aria-pressed', s === status ? 'true' : 'false');
+        });
       });
     }
 
@@ -246,7 +301,7 @@
     }
 
     function bind() {
-      // Status control (detail page)
+      // Status control (4-segment) — used in deck cards + detail pages
       document.querySelectorAll('.js-status-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
           const root = btn.closest('.status-control');
@@ -257,24 +312,27 @@
           renderAll();
         });
       });
-      document.querySelectorAll('.js-na-toggle').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const root = btn.closest('.status-control');
-          const taxId = root && root.getAttribute('data-tax-id');
-          if (!taxId) return;
-          setStatus(taxId, 'not-applicable');
-          renderAll();
+
+      // Deck navigation
+      const prev = document.querySelector('.js-deck-prev');
+      if (prev) prev.addEventListener('click', () => navDeck(-1));
+      const next = document.querySelector('.js-deck-next');
+      if (next) next.addEventListener('click', () => navDeck(1));
+      document.querySelectorAll('.deck__dot').forEach((dot) => {
+        dot.addEventListener('click', () => {
+          const idx = parseInt(dot.getAttribute('data-deck-go') || '0', 10);
+          gotoDeck(idx);
         });
       });
-      document.querySelectorAll('.js-na-undo').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const root = btn.closest('.status-control');
-          const taxId = root && root.getAttribute('data-tax-id');
-          if (!taxId) return;
-          setStatus(taxId, 'not-started');
-          renderAll();
+      // Keyboard arrows
+      const deck = document.querySelector('.js-deck');
+      if (deck) {
+        document.addEventListener('keydown', (e) => {
+          if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+          if (e.key === 'ArrowLeft') navDeck(-1);
+          if (e.key === 'ArrowRight') navDeck(1);
         });
-      });
+      }
 
       // Welcome card
       const startBtn = document.querySelector('.js-welcome-start');

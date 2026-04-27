@@ -5,9 +5,11 @@ import { t } from '../i18n/ui';
 interface Props {
   lang: Lang;
   taxId: string;
+  /** Compact label set used inside the deck cards */
+  compact?: boolean;
 }
 
-const { lang, taxId } = Astro.props;
+const { lang, taxId, compact = false } = Astro.props;
 
 const labels = {
   'not-started': t(lang, 'status.not_started'),
@@ -17,32 +19,24 @@ const labels = {
 };
 ---
 
-<div class="status-control" data-tax-id={taxId} data-labels={JSON.stringify(labels)}>
+<div class={`status-control ${compact ? 'status-control--compact' : ''}`} data-tax-id={taxId} data-labels={JSON.stringify(labels)}>
   <span class="status-control__label">{t(lang, 'status.label')}</span>
-  <div role="group" aria-label={t(lang, 'status.label')} class="segmented js-segmented" data-active>
+  <div role="group" aria-label={t(lang, 'status.label')} class="segmented js-segmented">
     <button type="button" class="segmented__btn js-status-btn" data-status="not-started" aria-pressed="true">
-      <span aria-hidden="true">○</span>
-      {labels['not-started']}
+      <span class="segmented__icon" aria-hidden="true">○</span>
+      <span class="segmented__label">{labels['not-started']}</span>
     </button>
     <button type="button" class="segmented__btn js-status-btn" data-status="in-progress" aria-pressed="false">
-      <span aria-hidden="true">●</span>
-      {labels['in-progress']}
+      <span class="segmented__icon" aria-hidden="true">●</span>
+      <span class="segmented__label">{labels['in-progress']}</span>
     </button>
     <button type="button" class="segmented__btn js-status-btn" data-status="done" aria-pressed="false">
-      <span aria-hidden="true">✓</span>
-      {labels['done']}
+      <span class="segmented__icon" aria-hidden="true">✓</span>
+      <span class="segmented__label">{labels['done']}</span>
     </button>
-  </div>
-
-  <div class="status-na js-status-na">
-    <button type="button" class="btn btn--ghost js-na-toggle" data-status="not-applicable">
-      {labels['not-applicable']} →
+    <button type="button" class="segmented__btn segmented__btn--na js-status-btn" data-status="not-applicable" aria-pressed="false">
+      <span class="segmented__icon" aria-hidden="true">—</span>
+      <span class="segmented__label">{labels['not-applicable']}</span>
     </button>
-  </div>
-
-  <div class="status-na__active js-status-na-active" hidden>
-    <span aria-hidden="true">—</span>
-    <span>{labels['not-applicable']}</span>
-    <button type="button" class="js-na-undo">{t(lang, 'status.undo_na')}</button>
   </div>
 </div>

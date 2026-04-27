@@ -2,12 +2,12 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Disclaimer from '../../components/Disclaimer.astro';
-import TaxCard from '../../components/TaxCard.astro';
+import TaxDeck from '../../components/TaxDeck.astro';
 import Welcome from '../../components/Welcome.astro';
 import Survey from '../../components/Survey.astro';
 import Result from '../../components/Result.astro';
 import Celebration from '../../components/Celebration.astro';
-import { t, taxUrl } from '../../i18n/ui';
+import { t } from '../../i18n/ui';
 
 const lang = 'es' as const;
 const taxes = (await getCollection('taxes-es')).sort(
@@ -41,23 +41,7 @@ const taxes = (await getCollection('taxes-es')).sort(
       </div>
     </div>
 
-    <ul class="tax-list js-tax-list">
-      {taxes.map((tax) => (
-        <li>
-          <TaxCard
-            lang={lang}
-            href={taxUrl(lang, tax.data.slug)}
-            taxId={tax.data.id}
-            jurisdiction={tax.data.jurisdiction}
-            jurisdictionLabel={t(lang, `jurisdiction.${tax.data.jurisdiction}` as any)}
-            name={tax.data.name}
-            summary={tax.data.summary}
-            rateSummary={tax.data.rate_summary.split('.')[0]}
-            deadline={tax.data.deadline}
-          />
-        </li>
-      ))}
-    </ul>
+    <TaxDeck lang={lang} taxes={taxes} />
 
     <p class="clear-row js-clear-row">
       <button type="button" class="btn btn--ghost js-clear-checklist">{t(lang, 'checklist.clear')}</button>

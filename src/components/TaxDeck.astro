@@ -1,0 +1,105 @@
+---
+import type { Lang } from '../i18n/ui';
+import { t, taxUrl } from '../i18n/ui';
+import SegmentedStatus from './SegmentedStatus.astro';
+
+interface TaxData {
+  data: {
+    id: string;
+    slug: string;
+    name: string;
+    summary: string;
+    jurisdiction: 'city-of-portland' | 'multnomah-county' | 'metro';
+    rate_summary: string;
+    deadline: string;
+    filing_url: string;
+  };
+}
+
+interface Props {
+  lang: Lang;
+  taxes: TaxData[];
+}
+
+const { lang, taxes } = Astro.props;
+---
+
+<section class="deck js-deck" aria-label="Tax cards" data-page-deck>
+  <ol class="deck__cards">
+    {taxes.map((tax, i) => (
+      <li
+        class={`deck__card ${i === 0 ? 'is-active' : ''}`}
+        data-deck-index={i}
+        data-tax-id={tax.data.id}
+        data-progress-id={tax.data.id}
+        data-juris={tax.data.jurisdiction}
+        aria-hidden={i === 0 ? 'false' : 'true'}
+      >
+        <div class="deck__card-head">
+          <span class="deck__card-tag">
+            <span class="deck__card-tag-dot" aria-hidden="true"></span>
+            {t(lang, `jurisdiction.${tax.data.jurisdiction}` as any)}
+          </span>
+          <span class="deck__card-status js-card-status"
+                data-tax-id={tax.data.id}
+                data-labels={JSON.stringify({
+                  'not-started': t(lang, 'status.not_started'),
+                  'in-progress': t(lang, 'status.in_progress'),
+                  'done': t(lang, 'status.done'),
+                  'not-applicable': t(lang, 'status.not_applicable'),
+                })}>
+            <span class="deck__card-status-dot" aria-hidden="true"></span>
+            <span class="deck__card-status-label">{t(lang, 'status.not_started')}</span>
+          </span>
+        </div>
+
+        <h2 class="deck__card-title">{tax.data.name}</h2>
+        <p class="deck__card-summary">{tax.data.summary}</p>
+
+        <dl class="deck__card-defs">
+          <div>
+            <dt>{t(lang, 'tax.rate')}</dt>
+            <dd>{tax.data.rate_summary.split('.')[0]}</dd>
+          </div>
+          <div>
+            <dt>{t(lang, 'tax.deadline')}</dt>
+            <dd class="tabular">{tax.data.deadline}</dd>
+          </div>
+        </dl>
+
+        <SegmentedStatus lang={lang} taxId={tax.data.id} compact />
+
+        <div class="deck__card-actions">
+          <a href={tax.data.filing_url} class="btn btn--primary" target="_blank" rel="noopener">
+            {t(lang, 'tax.file_button')} ↗
+          </a>
+          <a href={taxUrl(lang, tax.data.slug)} class="btn btn--secondary">
+            {t(lang, 'tax.see_details')} →
+          </a>
+        </div>
+      </li>
+    ))}
+  </ol>
+
+  <nav class="deck__nav" aria-label="Card navigation">
+    <button type="button" class="deck__nav-btn deck__nav-btn--prev js-deck-prev" aria-label="Previous tax">
+      <span aria-hidden="true">←</span>
+      <span class="deck__nav-label">Previous</span>
+    </button>
+
+    <ol class="deck__dots" aria-label="Position">
+      {taxes.map((tax, i) => (
+        <li>
+          <button type="button" class={`deck__dot ${i === 0 ? 'is-active' : ''}`} data-deck-go={i} aria-label={`Go to tax ${i + 1}`}>
+            <span class="sr-only">{i + 1}</span>
+          </button>
+        </li>
+      ))}
+    </ol>
+
+    <button type="button" class="deck__nav-btn deck__nav-btn--next js-deck-next" aria-label="Next tax">
+      <span class="deck__nav-label">Next</span>
+      <span aria-hidden="true">→</span>
+    </button>
+  </nav>
+</section>
