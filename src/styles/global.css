@@ -284,13 +284,11 @@ ul { list-style: none; }
 }
 
 @media (max-width: 540px) {
-  .status-badges { width: 100%; order: 2; margin: 0; }
-  .site-header__inner > .brand,
-  .site-header__inner > .lang-switcher { order: 1; }
-  .site-header__inner > .site-nav { order: 1; }
+  .status-badges { margin: 0; }
   .status-badges__total { font-size: 12px; padding: 5px 10px; }
   .status-badges__amount { font-size: 14px; }
   .status-badges__label { display: none; }
+  .status-badges__progress-track { display: none; }
 }
 .brand {
   display: inline-flex;
@@ -1749,7 +1747,7 @@ ul { list-style: none; }
 
 .calc-trigger {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-4);
   width: 100%;
   background: var(--surface);

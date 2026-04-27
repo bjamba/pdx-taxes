@@ -18,17 +18,9 @@ export const ui = {
     /* Welcome / survey */
     'welcome.eyebrow': 'A friendlier way to start',
     'welcome.title': 'Hey — let\'s figure this out together.',
-    'welcome.body': 'Answer three quick questions and we\'ll show you which local taxes likely apply to you. Your answers never leave this browser, and you can change them anytime.',
+    'welcome.body': 'Answer two quick questions and we\'ll show you which local taxes likely apply to you. Your answers never leave this browser, and you can change them anytime.',
     'welcome.cta_start': 'Let\'s do it',
     'welcome.cta_skip': 'Just show me everything',
-
-    'survey.q1_label': 'Where do you live?',
-    'survey.q1_portland': 'Portland (the city)',
-    'survey.q1_multnomah': 'Elsewhere in Multnomah County',
-    'survey.q1_metro': 'Elsewhere in the Metro region',
-    'survey.q1_metro_hint': 'Washington or Clackamas County',
-    'survey.q1_outside': 'Somewhere else entirely',
-    'survey.q1_unsure': 'I\'m not sure',
 
     'survey.q2_label': 'Filing single or jointly?',
     'survey.q2_single': 'Single',
@@ -104,15 +96,12 @@ export const ui = {
     'jurisdiction.metro': 'Metro',
 
     /* Modal — same questions as the survey, edited any time */
-    'calc.trigger_title': 'Tell me about your tax status',
-    'calc.trigger_lead': 'Adjust your answers to refine which taxes apply and how much you might owe.',
+    'calc.trigger_title': 'Tax Status',
+    'calc.trigger_lead': 'Filing status and income — see which taxes apply and what you might owe.',
     'calc.modal_title': 'Your tax status',
     'calc.privacy': 'Stays in this browser. We never see this.',
     'calc.close': 'Close',
     'calc.save': 'Save',
-    'calc.arts_legend': 'Arts Tax exemption',
-    'calc.arts_exempt_label': 'I\'m exempt from the Arts Tax',
-    'calc.arts_exempt_hint': 'You\'re exempt if you earned under $1,000 this year, or if your household income is at or below the federal poverty level (~$15,650 for a single-person household in 2025).',
     'card_est.empty': 'Add your income above to see an estimate',
     'card_est.below': 'Below the threshold — you don\'t owe this',
     'card_est.label': 'Your estimate',
@@ -137,8 +126,8 @@ export const ui = {
     'deadlines.section_forms': 'Forms you may receive',
     'deadlines.section_filing': 'Filing deadlines',
     'deadlines.nav_label': 'Deadlines',
-    'deadlines.card_title': 'Save tax deadlines to calendar',
-    'deadlines.card_lead': 'Download .ics reminders for filing dates and the forms you\'ll receive in the mail.',
+    'deadlines.card_title': 'Tax Deadlines',
+    'deadlines.card_lead': 'Download .ics reminders for filing dates and the forms you\'ll receive.',
   },
   es: {
     'site.name': 'pdx taxes',
@@ -151,19 +140,11 @@ export const ui = {
 
     'welcome.eyebrow': 'Una forma más amable de empezar',
     'welcome.title': 'Hola — resolvamos esto juntos.',
-    'welcome.body': 'Responda tres preguntas rápidas y le mostraremos qué impuestos locales le aplican. Sus respuestas nunca salen de este navegador, y puede cambiarlas cuando quiera.',
+    'welcome.body': 'Responda dos preguntas rápidas y le mostraremos qué impuestos locales le aplican. Sus respuestas nunca salen de este navegador, y puede cambiarlas cuando quiera.',
     'welcome.cta_start': 'Vamos a empezar',
     'welcome.cta_skip': 'Solo muéstrame todo',
 
-    'survey.q1_label': '¿Dónde vive?',
-    'survey.q1_portland': 'Portland (la ciudad)',
-    'survey.q1_multnomah': 'En otra parte del Condado de Multnomah',
-    'survey.q1_metro': 'En otra parte de la región Metro',
-    'survey.q1_metro_hint': 'Condado de Washington o Clackamas',
-    'survey.q1_outside': 'Otro lugar fuera de Metro',
-    'survey.q1_unsure': 'No estoy seguro',
-
-    'survey.q2_label': '¿Presenta individual o conjunta?',
+'survey.q2_label': '¿Presenta individual o conjunta?',
     'survey.q2_single': 'Individual',
     'survey.q2_joint': 'Conjunta',
 
@@ -228,15 +209,12 @@ export const ui = {
     'jurisdiction.multnomah-county': 'Condado de Multnomah',
     'jurisdiction.metro': 'Metro',
 
-    'calc.trigger_title': 'Cuéntenos sobre su estado fiscal',
-    'calc.trigger_lead': 'Ajuste sus respuestas para refinar qué impuestos le aplican y cuánto podría deber.',
+    'calc.trigger_title': 'Estado Fiscal',
+    'calc.trigger_lead': 'Estado civil y ingresos — vea qué impuestos aplican y cuánto podría deber.',
     'calc.modal_title': 'Su estado fiscal',
     'calc.privacy': 'Se queda en este navegador. Nunca lo vemos.',
     'calc.close': 'Cerrar',
     'calc.save': 'Guardar',
-    'calc.arts_legend': 'Exención del Impuesto de las Artes',
-    'calc.arts_exempt_label': 'Estoy exento del Impuesto de las Artes',
-    'calc.arts_exempt_hint': 'Está exento si ganó menos de $1,000 este año, o si los ingresos de su hogar están en o por debajo del nivel federal de pobreza (~$15,650 para un hogar de una sola persona en 2025).',
     'card_est.empty': 'Añada su ingreso arriba para ver un estimado',
     'card_est.below': 'Por debajo del umbral — no debe esto',
     'card_est.label': 'Su estimado',
@@ -258,8 +236,8 @@ export const ui = {
     'deadlines.section_forms': 'Formularios que puede recibir',
     'deadlines.section_filing': 'Fechas de presentación',
     'deadlines.nav_label': 'Fechas límite',
-    'deadlines.card_title': 'Guardar fechas en mi calendario',
-    'deadlines.card_lead': 'Descargue recordatorios .ics para fechas de presentación y formularios que llegarán por correo.',
+    'deadlines.card_title': 'Fechas de Impuestos',
+    'deadlines.card_lead': 'Descargue recordatorios .ics para fechas de presentación y formularios que recibirá.',
   },
 } as const;
 

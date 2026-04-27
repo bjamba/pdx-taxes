@@ -38,11 +38,10 @@
 
     /**
      * Profile shape (v2):
-     *   { residency: 'portland'|'multnomah'|'metro'|'outside'|'unsure',
-     *     filing:    'single'|'joint',
-     *     income:    number|null,           // null = "I'd rather not say"
-     *     artsExempt: boolean,
-     *     showAll:   boolean }              // toggled by view-toggle
+     *   { filing:  'single'|'joint',
+     *     income:  number|null,    // null = not provided
+     *     showAll: boolean }       // toggled by view-toggle
+     * Portland residency assumed. Arts Tax exemption derived from income < $1,000.
      */
     const readProfile = () => readJSON(KEY_PROFILE);
     const writeProfile = (p) => writeJSON(KEY_PROFILE, p);
@@ -50,16 +49,13 @@
     /* ── Applicability ─────────────────────────────────── */
     function appliesTo(taxId, p) {
       if (!p || p.showAll) return true;
-      const inPortland  = ['portland', 'unsure'].includes(p.residency);
-      const inMultnomah = ['portland', 'multnomah', 'unsure'].includes(p.residency);
-      const inMetro     = p.residency !== 'outside';
-      const isJoint     = p.filing === 'joint';
-      const overPFAThreshold   = p.income == null ? true : p.income > (isJoint ? 200000 : 125000);
-      const overSHSThreshold   = p.income == null ? true : p.income > (isJoint ? 205000 : 128000);
+      const isJoint = p.filing === 'joint';
+      const overPFAThreshold = p.income == null ? true : p.income > (isJoint ? 200000 : 125000);
+      const overSHSThreshold = p.income == null ? true : p.income > (isJoint ? 205000 : 128000);
       switch (taxId) {
-        case 'arts-tax':       return inPortland;
-        case 'multnomah-pfa':  return inMultnomah && overPFAThreshold;
-        case 'metro-shs':      return inMetro && overSHSThreshold;
+        case 'arts-tax':       return true; // Portland residency assumed
+        case 'multnomah-pfa':  return overPFAThreshold;
+        case 'metro-shs':      return overSHSThreshold;
         default:               return true;
       }
     }
@@ -70,9 +66,8 @@
       catch { return '$' + Math.round(n).toLocaleString(); }
     }
     function computeArts(profile) {
-      const inPortland = profile && (profile.residency === 'portland' || profile.residency === 'unsure');
-      if (!inPortland) return { applies: false, amount: 0, state: 'na' };
-      if (profile.artsExempt) return { applies: false, amount: 0, state: 'exempt' };
+      const income = profile && profile.income != null ? profile.income : null;
+      if (income !== null && income < 1000) return { applies: false, amount: 0, state: 'exempt' };
       return { applies: true, amount: 35, state: 'computed' };
     }
     function computePFA(filing, income) {
@@ -382,7 +377,6 @@
       if (!form) return null;
       const fd = new FormData(form);
       const cur = readProfile() || {};
-      const residency = String(fd.get('residency') || cur.residency || 'portland');
       const filing = String(fd.get('filing') || cur.filing || 'single');
       const incomeStr = fd.get('income');
       let income = cur.income == null ? null : cur.income;
@@ -390,26 +384,18 @@
         const s = String(incomeStr).trim();
         income = (s === '') ? null : (parseFloat(s) || 0);
       }
-      const artsExempt = fd.has('artsExempt');
-      // Preserve showAll if present
-      return { residency, filing, income, artsExempt, ...(cur.showAll ? { showAll: true } : {}) };
+      return { filing, income, ...(cur.showAll ? { showAll: true } : {}) };
     }
 
     /** Pre-fill any survey form with the saved profile values. */
     function syncSurveyForm(form, profile) {
       if (!form) return;
       const p = profile || {};
-      form.querySelectorAll('input[name="residency"]').forEach((r) => {
-        r.checked = (r.value === (p.residency || 'portland'));
-      });
       form.querySelectorAll('input[name="filing"]').forEach((r) => {
         r.checked = (r.value === (p.filing || 'single'));
       });
       const incomeEl = form.querySelector('input[name="income"]');
       if (incomeEl) incomeEl.value = (p.income == null) ? '' : String(p.income);
-      // Arts exempt lives next to the form in modal context
-      const exemptEl = document.querySelector('.js-modal-arts-exempt');
-      if (exemptEl) exemptEl.checked = !!p.artsExempt;
     }
     // Allow handlers above (defined before this function) to call closeCalc via window.
     function closeCalc() { if (window.__pdxClose) window.__pdxClose(); }
@@ -524,7 +510,7 @@
       if (startBtn) startBtn.addEventListener('click', () => setMain('survey'));
       const skipBtn = document.querySelector('.js-welcome-skip');
       if (skipBtn) skipBtn.addEventListener('click', () => {
-        writeProfile({ showAll: true, residency: 'unsure', filing: 'single', income: null, artsExempt: false });
+        writeProfile({ showAll: true, filing: 'single', income: null });
         renderAll();
         scrollToTopOfDeck();
       });
@@ -534,12 +520,7 @@
         const inModal = !!form.closest('.js-calc-modal');
         form.addEventListener('submit', (e) => {
           e.preventDefault();
-          // Pull arts exemption from the modal-only checkbox if present
-          const cur = readProfile() || {};
-          const exemptEl = form.closest('.js-calc-modal') ? document.querySelector('.js-modal-arts-exempt') : null;
           const profile = readProfileFromForm(form);
-          if (exemptEl) profile.artsExempt = !!exemptEl.checked;
-          else profile.artsExempt = !!cur.artsExempt;
           writeProfile(profile);
           renderAll();
           if (inModal) closeCalc();
@@ -552,7 +533,7 @@
             closeCalc();
             return;
           }
-          writeProfile({ showAll: true, residency: 'unsure', filing: 'single', income: null, artsExempt: false });
+          writeProfile({ showAll: true, filing: 'single', income: null });
           renderAll();
           scrollToTopOfDeck();
         });
@@ -560,26 +541,13 @@
         // their estimates ripple as they edit.
         if (inModal) {
           const live = () => {
-            const cur = readProfile() || {};
             const profile = readProfileFromForm(form);
-            const exemptEl = document.querySelector('.js-modal-arts-exempt');
-            profile.artsExempt = exemptEl ? !!exemptEl.checked : !!cur.artsExempt;
             writeProfile(profile);
             renderAll();
           };
           form.addEventListener('input', live);
           form.addEventListener('change', live);
         }
-      });
-      // Arts exempt checkbox lives outside the form; bind it separately for live updates.
-      const modalExempt = document.querySelector('.js-modal-arts-exempt');
-      if (modalExempt) modalExempt.addEventListener('change', () => {
-        const form = document.querySelector('.js-calc-modal .js-survey-form');
-        if (!form) return;
-        const profile = readProfileFromForm(form);
-        profile.artsExempt = !!modalExempt.checked;
-        writeProfile(profile);
-        renderAll();
       });
 
       // Result banner — edit goes back to the survey form
@@ -595,7 +563,7 @@
             writeProfile({ ...cur, showAll: true });
           } else {
             const { showAll, ...rest } = cur;
-            if (rest && rest.residency) writeProfile(rest);
+            if (rest && rest.filing) writeProfile(rest);
             else { remove(KEY_PROFILE); setMain('survey'); }
           }
           renderAll();

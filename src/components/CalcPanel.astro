@@ -31,17 +31,6 @@ const { lang } = Astro.props;
          so we can hide the secondary skip button and close the modal on submit. -->
     <div class="survey--in-modal">
       <Survey lang={lang} />
-
-      <fieldset class="survey__q survey__q--exempt">
-        <legend class="survey__legend">{t(lang, 'calc.arts_legend')}</legend>
-        <label class="calc-exempt">
-          <input type="checkbox" class="js-modal-arts-exempt" />
-          <span class="calc-exempt__main">
-            <span class="calc-exempt__title">{t(lang, 'calc.arts_exempt_label')}</span>
-            <span class="calc-exempt__hint">{t(lang, 'calc.arts_exempt_hint')}</span>
-          </span>
-        </label>
-      </fieldset>
     </div>
   </div>
 </div>

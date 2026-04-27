@@ -2,7 +2,6 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import SegmentedStatus from '../../components/SegmentedStatus.astro';
-import Disclaimer from '../../components/Disclaimer.astro';
 import { t, localeHome } from '../../i18n/ui';
 
 export async function getStaticPaths() {
@@ -29,8 +28,6 @@ const path = `/${data.slug}`;
   <p class="lead">{data.summary}</p>
 
   <SegmentedStatus lang={lang} taxId={data.id} />
-
-  <Disclaimer lang={lang} />
 
   <section class="detail-section">
     <h2>{t(lang, 'tax.who_owes')}</h2>

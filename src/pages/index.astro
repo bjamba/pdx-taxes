@@ -19,15 +19,15 @@ const taxes = (await getCollection('taxes-en')).sort(
 
 <BaseLayout lang={lang} path="" title="Local Portland taxes, in one place">
   <div data-page="home" data-state="loading">
-    <Welcome lang={lang} />
-    <Survey lang={lang} />
-    <Celebration lang={lang} />
-
     <section class="hero hero--compact">
       <h1 class="hero__title">
         {t(lang, 'hero.title_a')} <em>{t(lang, 'hero.title_em')}</em> {t(lang, 'hero.title_b')}
       </h1>
     </section>
+
+    <Welcome lang={lang} />
+    <Survey lang={lang} />
+    <Celebration lang={lang} />
 
     <div class="action-cards">
       <CalcPanel lang={lang} />

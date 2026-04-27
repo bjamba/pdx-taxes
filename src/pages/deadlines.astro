@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Disclaimer from '../components/Disclaimer.astro';
-import { t } from '../i18n/ui';
+import { t, localeHome } from '../i18n/ui';
 
 const lang = 'en' as const;
 
@@ -30,10 +29,10 @@ const filingDeadlines: Deadline[] = [
 ---
 
 <BaseLayout lang={lang} path="/deadlines" title="Deadlines for tax year 2025">
+  <a href={localeHome(lang)} class="detail-back">← {t(lang, 'tax.back')}</a>
+
   <h1>{t(lang, 'deadlines.title')}</h1>
   <p class="lead">{t(lang, 'deadlines.lead')}</p>
-
-  <Disclaimer lang={lang} />
 
   <div class="deadlines js-deadlines">
     <div class="deadlines__bulk">
