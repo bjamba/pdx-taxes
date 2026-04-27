@@ -2,7 +2,6 @@
 import type { Lang } from '../i18n/ui';
 import { t, localeHome } from '../i18n/ui';
 import LanguageSwitcher from './LanguageSwitcher.astro';
-import BrandMark from './BrandMark.astro';
 
 interface Props {
   lang: Lang;
@@ -15,12 +14,15 @@ const homeHref = localeHome(lang);
 
 <header class="site-header">
   <div class="site-header__inner">
-    <a href={homeHref} class="brand">
-      <BrandMark />
-      <span class="brand-name">{t(lang, 'site.name')}</span>
-    </a>
-
+    <!-- Sticky header carries only the live status: estimated total, progress, language. -->
     <div class="status-badges js-status-badges" hidden>
+      <a href={homeHref} class="status-badges__home" aria-label={t(lang, 'site.name')}>
+        <svg viewBox="0 0 36 36" width="22" height="22" aria-hidden="true">
+          <circle cx="13" cy="14" r="9" fill="#3F6B4F" opacity="0.9" />
+          <circle cx="23" cy="14" r="9" fill="#B65235" opacity="0.85" style="mix-blend-mode: multiply" />
+          <circle cx="18" cy="23" r="9" fill="#8E5F0F" opacity="0.85" style="mix-blend-mode: multiply" />
+        </svg>
+      </a>
       <div class="status-badges__total js-status-total" hidden>
         <span class="status-badges__label">{t(lang, 'header.total')}</span>
         <span class="status-badges__amount tabular js-status-total-amount">$0</span>

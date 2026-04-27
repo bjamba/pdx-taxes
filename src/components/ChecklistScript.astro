@@ -470,12 +470,11 @@
       renderSegmented();
       renderProgress();
       renderEstimates();
-      const main = document.querySelector('[data-page="home"]');
+      // Always reveal the badge group — it has the home mark even on
+      // non-home pages. Total/progress badges inside it stay home-only
+      // (their hidden state is set by their respective render fns).
       const headerStatus = document.querySelector('.js-status-badges');
-      if (headerStatus) {
-        if (main) headerStatus.removeAttribute('hidden');
-        else headerStatus.setAttribute('hidden', '');
-      }
+      if (headerStatus) headerStatus.removeAttribute('hidden');
     }
 
     function setMain(state) {

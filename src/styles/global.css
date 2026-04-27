@@ -192,6 +192,7 @@ ul { list-style: none; }
   margin: 0 auto;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   flex-wrap: wrap;
   row-gap: var(--space-2);
@@ -202,9 +203,22 @@ ul { list-style: none; }
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  margin-left: auto;
   margin-right: var(--space-2);
 }
+/* Home link inside the badge group — small mark-only */
+.status-badges__home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  padding: 6px;
+  border-radius: 999px;
+  margin-right: var(--space-1);
+  border: 1.5px solid transparent;
+}
+.status-badges__home:hover { border-color: var(--surface-edge); background: var(--paper); text-decoration: none; }
+.status-badges__home:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.status-badges__home svg { display: block; }
 .status-badges__total {
   display: inline-flex;
   align-items: center;
