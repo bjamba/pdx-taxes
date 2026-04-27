@@ -1,0 +1,32 @@
+---
+import type { Lang } from '../i18n/ui';
+import { t } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  total: number;
+}
+
+const { lang, total } = Astro.props;
+---
+
+<section class="result js-result" hidden data-total={total}>
+  <span class="result__eyebrow js-result-eyebrow">{t(lang, 'result.eyebrow')}</span>
+  <h2 class="result__title js-result-title"></h2>
+  <p class="result__body js-result-body" hidden></p>
+  <div class="result__actions">
+    <button type="button" class="btn btn--ghost js-result-show-all">
+      {t(lang, 'result.show_all').replace('{total}', String(total))}
+    </button>
+    <button type="button" class="btn btn--ghost js-result-edit">
+      {t(lang, 'result.edit')}
+    </button>
+  </div>
+</section>
+
+<section class="skipped-banner js-skipped-banner" hidden>
+  <span class="skipped-banner__text">{t(lang, 'skipped.eyebrow')}</span>
+  <button type="button" class="btn btn--ghost js-skipped-edit">
+    {t(lang, 'skipped.cta')} →
+  </button>
+</section>

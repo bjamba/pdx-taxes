@@ -3,6 +3,10 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Disclaimer from '../../components/Disclaimer.astro';
 import TaxCard from '../../components/TaxCard.astro';
+import Welcome from '../../components/Welcome.astro';
+import Survey from '../../components/Survey.astro';
+import Result from '../../components/Result.astro';
+import Celebration from '../../components/Celebration.astro';
 import { t, taxUrl } from '../../i18n/ui';
 
 const lang = 'es' as const;
@@ -12,46 +16,52 @@ const taxes = (await getCollection('taxes-es')).sort(
 ---
 
 <BaseLayout lang={lang} path="" title="Impuestos locales de Portland en un solo lugar">
-  <section class="hero">
-    <span class="hero__eyebrow">{t(lang, 'hero.eyebrow')}</span>
-    <h1 class="hero__title">
-      {t(lang, 'hero.title_a')} <em>{t(lang, 'hero.title_em')}</em> {t(lang, 'hero.title_b')}
-    </h1>
-    <p class="hero__lead">{t(lang, 'hero.lead')}</p>
-  </section>
+  <div data-page="home" data-state="loading">
+    <section class="hero">
+      <span class="hero__eyebrow">{t(lang, 'hero.eyebrow')}</span>
+      <h1 class="hero__title">
+        {t(lang, 'hero.title_a')} <em>{t(lang, 'hero.title_em')}</em> {t(lang, 'hero.title_b')}
+      </h1>
+      <p class="hero__lead">{t(lang, 'hero.lead')}</p>
+    </section>
 
-  <Disclaimer lang={lang} />
+    <Welcome lang={lang} />
+    <Survey lang={lang} />
+    <Result lang={lang} total={taxes.length} />
+    <Disclaimer lang={lang} />
+    <Celebration lang={lang} />
 
-  <div class="progress js-progress" role="status" aria-label={t(lang, 'checklist.progress')}>
-    <div class="progress__top">
-      <span class="progress__title">{t(lang, 'checklist.title')}</span>
-      <span class="progress__count tabular">0 / {taxes.length}</span>
+    <div class="progress js-progress" role="status" aria-label={t(lang, 'checklist.progress')}>
+      <div class="progress__top">
+        <span class="progress__title">{t(lang, 'checklist.title')}</span>
+        <span class="progress__count tabular">0 / {taxes.length}</span>
+      </div>
+      <div class="progress__track" aria-hidden="true">
+        <div class="progress__fill" style="width: 0%"></div>
+      </div>
     </div>
-    <div class="progress__track" aria-hidden="true">
-      <div class="progress__fill" style="width: 0%"></div>
-    </div>
+
+    <ul class="tax-list js-tax-list">
+      {taxes.map((tax) => (
+        <li>
+          <TaxCard
+            lang={lang}
+            href={taxUrl(lang, tax.data.slug)}
+            taxId={tax.data.id}
+            jurisdiction={tax.data.jurisdiction}
+            jurisdictionLabel={t(lang, `jurisdiction.${tax.data.jurisdiction}` as any)}
+            name={tax.data.name}
+            summary={tax.data.summary}
+            rateSummary={tax.data.rate_summary.split('.')[0]}
+            deadline={tax.data.deadline}
+          />
+        </li>
+      ))}
+    </ul>
+
+    <p class="clear-row js-clear-row">
+      <button type="button" class="btn btn--ghost js-clear-checklist">{t(lang, 'checklist.clear')}</button>
+      <span class="cleared-note js-cleared-note" hidden>✓ {t(lang, 'checklist.cleared')}</span>
+    </p>
   </div>
-
-  <ul class="tax-list">
-    {taxes.map((tax) => (
-      <li>
-        <TaxCard
-          lang={lang}
-          href={taxUrl(lang, tax.data.slug)}
-          taxId={tax.data.id}
-          jurisdiction={tax.data.jurisdiction}
-          jurisdictionLabel={t(lang, `jurisdiction.${tax.data.jurisdiction}` as any)}
-          name={tax.data.name}
-          summary={tax.data.summary}
-          rateSummary={tax.data.rate_summary.split('.')[0]}
-          deadline={tax.data.deadline}
-        />
-      </li>
-    ))}
-  </ul>
-
-  <p style="margin-top: var(--space-10); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
-    <button type="button" class="btn btn--ghost js-clear-checklist">{t(lang, 'checklist.clear')}</button>
-    <span class="cleared-note js-cleared-note" hidden>✓ {t(lang, 'checklist.cleared')}</span>
-  </p>
 </BaseLayout>

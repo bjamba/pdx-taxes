@@ -1,0 +1,90 @@
+---
+import type { Lang } from '../i18n/ui';
+import { t } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<section class="survey js-survey" hidden>
+  <form class="survey__form js-survey-form">
+    <fieldset class="survey__q">
+      <legend class="survey__legend">{t(lang, 'survey.q1_label')}</legend>
+      <div class="survey__options">
+        <label class="survey-option">
+          <input type="radio" name="residency" value="portland" required />
+          <span>{t(lang, 'survey.q1_portland')}</span>
+        </label>
+        <label class="survey-option">
+          <input type="radio" name="residency" value="multnomah" />
+          <span>{t(lang, 'survey.q1_multnomah')}</span>
+        </label>
+        <label class="survey-option">
+          <input type="radio" name="residency" value="metro" />
+          <span>
+            {t(lang, 'survey.q1_metro')}
+            <em class="survey-option__hint">{t(lang, 'survey.q1_metro_hint')}</em>
+          </span>
+        </label>
+        <label class="survey-option">
+          <input type="radio" name="residency" value="outside" />
+          <span>{t(lang, 'survey.q1_outside')}</span>
+        </label>
+        <label class="survey-option">
+          <input type="radio" name="residency" value="unsure" />
+          <span>{t(lang, 'survey.q1_unsure')}</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset class="survey__q">
+      <legend class="survey__legend">{t(lang, 'survey.q2_label')}</legend>
+      <div class="survey__options">
+        <label class="survey-option">
+          <input type="radio" name="filing" value="single" required />
+          <span>{t(lang, 'survey.q2_single')}</span>
+        </label>
+        <label class="survey-option">
+          <input type="radio" name="filing" value="joint" />
+          <span>{t(lang, 'survey.q2_joint')}</span>
+        </label>
+        <label class="survey-option">
+          <input type="radio" name="filing" value="unsure" />
+          <span>{t(lang, 'survey.q2_unsure')}</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset class="survey__q">
+      <legend class="survey__legend">{t(lang, 'survey.q3_label')}</legend>
+      <div class="survey__options">
+        <label class="survey-option">
+          <input type="radio" name="income" value="low" required />
+          <span>{t(lang, 'survey.q3_low')}</span>
+        </label>
+        <label class="survey-option">
+          <input type="radio" name="income" value="mid" />
+          <span>{t(lang, 'survey.q3_mid')}</span>
+        </label>
+        <label class="survey-option">
+          <input type="radio" name="income" value="high" />
+          <span>{t(lang, 'survey.q3_high')}</span>
+        </label>
+        <label class="survey-option">
+          <input type="radio" name="income" value="unsure" />
+          <span>{t(lang, 'survey.q3_unsure')}</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <p class="survey__privacy">🔒 {t(lang, 'survey.privacy_note')}</p>
+
+    <div class="survey__actions">
+      <button type="submit" class="btn btn--primary">{t(lang, 'survey.submit')} →</button>
+      <button type="button" class="btn btn--ghost js-survey-skip">{t(lang, 'survey.back')}</button>
+    </div>
+  </form>
+</section>

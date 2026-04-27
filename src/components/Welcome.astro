@@ -1,0 +1,24 @@
+---
+import type { Lang } from '../i18n/ui';
+import { t } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<section class="welcome js-welcome" data-state="welcome">
+  <span class="welcome__eyebrow">{t(lang, 'welcome.eyebrow')}</span>
+  <h2 class="welcome__title">{t(lang, 'welcome.title')}</h2>
+  <p class="welcome__body">{t(lang, 'welcome.body')}</p>
+  <div class="welcome__actions">
+    <button type="button" class="btn btn--primary js-welcome-start">
+      {t(lang, 'welcome.cta_start')} →
+    </button>
+    <button type="button" class="btn btn--ghost js-welcome-skip">
+      {t(lang, 'welcome.cta_skip')}
+    </button>
+  </div>
+</section>

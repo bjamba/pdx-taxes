@@ -1,38 +1,166 @@
 ---
-// Client-only checklist + status control. State lives in localStorage.
+// Single client script: profile / state machine / checklist.
+// All state lives in localStorage. Nothing is transmitted.
 ---
 
 <script is:inline>
   (function () {
-    const STORAGE_KEY = 'pdx-taxes:checklist:v1';
+    const KEY_CHECKLIST = 'pdx-taxes:checklist:v1';
+    const KEY_PROFILE   = 'pdx-taxes:profile:v1';
 
-    function read() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return {};
-        const parsed = JSON.parse(raw);
-        return (parsed && typeof parsed === 'object' && parsed.items) ? parsed.items : {};
-      } catch { return {}; }
-    }
-    function write(items) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, items })); } catch {}
-    }
-    function clear() {
-      try { localStorage.removeItem(STORAGE_KEY); } catch {}
-    }
-    function setStatus(taxId, status) {
-      const items = read();
+    /* ── Storage ───────────────────────────────────────────── */
+    const readJSON = (k) => {
+      try { return JSON.parse(localStorage.getItem(k) || 'null') || null; }
+      catch { return null; }
+    };
+    const writeJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+    const remove   = (k) => { try { localStorage.removeItem(k); } catch {} };
+
+    const readChecklist = () => {
+      const j = readJSON(KEY_CHECKLIST);
+      return (j && j.items) ? j.items : {};
+    };
+    const writeChecklist = (items) => writeJSON(KEY_CHECKLIST, { version: 1, items });
+    const setStatus = (taxId, status) => {
+      const items = readChecklist();
       items[taxId] = { status, updated_at: new Date().toISOString() };
-      write(items);
-    }
-    function getStatus(taxId) {
-      const items = read();
+      writeChecklist(items);
+    };
+    const getStatus = (taxId) => {
+      const items = readChecklist();
       return (items[taxId] && items[taxId].status) || 'not-started';
+    };
+
+    /** profile = { residency, filing, income } | { showAll: true } | null */
+    const readProfile = () => readJSON(KEY_PROFILE);
+    const writeProfile = (p) => writeJSON(KEY_PROFILE, p);
+
+    /* ── Applicability logic ─────────────────────────────────
+     * Conservative: when in doubt, INCLUDE. We'd rather show a
+     * tax that doesn't apply than miss one that does.
+     */
+    function appliesTo(taxId, p) {
+      if (!p || p.showAll) return true;
+      const inPortland = ['portland', 'unsure'].includes(p.residency);
+      const inMultnomah = ['portland', 'multnomah', 'unsure'].includes(p.residency);
+      const inMetro = p.residency !== 'outside';
+      const overThreshold = ['mid', 'high', 'unsure'].includes(p.income);
+      switch (taxId) {
+        case 'arts-tax':       return inPortland;
+        case 'multnomah-pfa':  return inMultnomah && overThreshold;
+        case 'metro-shs':      return inMetro && overThreshold;
+        default:               return true;
+      }
     }
 
-    const STATUS_ICONS = { 'not-started': '○', 'in-progress': '●', 'done': '✓', 'not-applicable': '—' };
+    /* ── State derivation ─────────────────────────────────── */
+    function deriveState() {
+      const profile = readProfile();
+      if (!profile) return { state: 'welcome', profile: null };
+      if (profile.showAll) {
+        return { state: doneState('skipped'), profile };
+      }
+      return { state: doneState('result'), profile };
+    }
+    function doneState(orElse) {
+      // If every visible (applicable) tax is done or n/a, show celebration.
+      const profile = readProfile();
+      const items = readChecklist();
+      const cards = Array.from(document.querySelectorAll('[data-progress-id]'));
+      const visible = cards.filter((c) => {
+        const id = c.getAttribute('data-progress-id');
+        if (!id) return false;
+        if (!profile || profile.showAll) return true;
+        return appliesTo(id, profile);
+      });
+      if (visible.length === 0) return orElse;
+      const allHandled = visible.every((c) => {
+        const id = c.getAttribute('data-progress-id');
+        const s = (items[id] && items[id].status) || 'not-started';
+        return s === 'done' || s === 'not-applicable';
+      });
+      return allHandled ? 'done' : orElse;
+    }
 
-    /* Render the small status badge on tax cards (home page) */
+    /* ── Render ──────────────────────────────────────────── */
+
+    function applyState() {
+      const root = document.documentElement;
+      const main = document.querySelector('[data-page="home"]');
+      if (!main) return; // detail page — no state machine
+      const { state, profile } = deriveState();
+      main.setAttribute('data-state', state);
+
+      // Filter tax cards based on profile
+      const list = document.querySelector('.js-tax-list');
+      if (list) {
+        if (profile && !profile.showAll) {
+          list.setAttribute('data-filter', 'on');
+          list.querySelectorAll('[data-progress-id]').forEach((card) => {
+            const id = card.getAttribute('data-progress-id');
+            card.setAttribute('data-applies', appliesTo(id, profile) ? 'true' : 'false');
+          });
+        } else {
+          list.removeAttribute('data-filter');
+          list.querySelectorAll('[data-progress-id]').forEach((card) => {
+            card.setAttribute('data-applies', 'true');
+          });
+        }
+      }
+
+      // Result banner copy
+      if (state === 'result') {
+        renderResultBanner(profile);
+      }
+    }
+
+    function renderResultBanner(profile) {
+      const result = document.querySelector('.js-result');
+      if (!result) return;
+      const total = parseInt(result.getAttribute('data-total') || '3', 10);
+      const cards = Array.from(document.querySelectorAll('[data-progress-id]'));
+      const applies = cards.filter((c) => {
+        const id = c.getAttribute('data-progress-id');
+        return appliesTo(id, profile);
+      });
+      const n = applies.length;
+      const titleEl = result.querySelector('.js-result-title');
+      const bodyEl = result.querySelector('.js-result-body');
+      const showAllBtn = result.querySelector('.js-result-show-all');
+      if (!titleEl) return;
+
+      const I18N = {
+        en: {
+          some: (n, t) => `Looks like <strong>${n} of ${t}</strong> likely apply to you.`,
+          all:  (n)    => `Looks like <strong>all ${n}</strong> likely apply to you.`,
+          none: () => `Nothing local for you this year.`,
+          noneBody: () => `Based on your answers, none of the three local taxes apply. (Federal and Oregon state taxes still do!)`,
+          showAll: (t) => `Show me all ${t} anyway`,
+        },
+        es: {
+          some: (n, t) => `Parece que <strong>${n} de ${t}</strong> le aplican.`,
+          all:  (n)    => `Parece que los <strong>${n}</strong> le aplican.`,
+          none: () => `No hay impuestos locales para usted este año.`,
+          noneBody: () => `Según sus respuestas, ninguno de los tres impuestos locales le aplica. (¡Los impuestos federal y estatal de Oregon sí!)`,
+          showAll: (t) => `Mostrar los ${t} de todos modos`,
+        },
+      };
+      const lang = (document.documentElement.getAttribute('lang') || 'en').slice(0, 2);
+      const dict = I18N[lang] || I18N.en;
+
+      if (n === 0) {
+        titleEl.innerHTML = dict.none();
+        if (bodyEl) { bodyEl.textContent = dict.noneBody(); bodyEl.removeAttribute('hidden'); }
+      } else if (n === total) {
+        titleEl.innerHTML = dict.all(n);
+        if (bodyEl) bodyEl.setAttribute('hidden', '');
+      } else {
+        titleEl.innerHTML = dict.some(n, total);
+        if (bodyEl) bodyEl.setAttribute('hidden', '');
+      }
+      if (showAllBtn) showAllBtn.textContent = dict.showAll(total);
+    }
+
     function renderCardBadges() {
       document.querySelectorAll('.js-card-status').forEach((badge) => {
         const taxId = badge.getAttribute('data-tax-id');
@@ -40,18 +168,20 @@
         const status = getStatus(taxId);
         let labels = {};
         try { labels = JSON.parse(badge.getAttribute('data-labels') || '{}'); } catch {}
-        badge.className = 'tax-card__status js-card-status' + (status !== 'not-started' ? ' tax-card__status--' + status : '');
+        badge.className = 'tax-card__status js-card-status' +
+          (status !== 'not-started' ? ' tax-card__status--' + status : '');
         const dot = badge.querySelector('.tax-card__status-dot');
         const label = badge.querySelector('.tax-card__status-label');
         if (label) label.textContent = labels[status] || labels['not-started'] || '';
-        if (dot) dot.style.background = (status === 'done' ? 'var(--portland)' :
-                                         status === 'in-progress' ? 'var(--metro)' :
-                                         status === 'not-applicable' ? 'var(--ink-faint)' :
-                                         'var(--ink-faint)');
+        if (dot) {
+          dot.style.background = status === 'done' ? 'var(--portland)' :
+                                 status === 'in-progress' ? 'var(--metro)' :
+                                 status === 'not-applicable' ? 'var(--ink-faint)' :
+                                 'var(--ink-faint)';
+        }
       });
     }
 
-    /* Render the segmented control on detail pages */
     function renderSegmented() {
       document.querySelectorAll('.status-control').forEach((root) => {
         const taxId = root.getAttribute('data-tax-id');
@@ -62,12 +192,10 @@
         const naActive = root.querySelector('.js-status-na-active');
         if (!seg || !naToggle || !naActive) return;
         if (status === 'not-applicable') {
-          seg.setAttribute('hidden', '');
-          naToggle.setAttribute('hidden', '');
+          seg.setAttribute('hidden', ''); naToggle.setAttribute('hidden', '');
           naActive.removeAttribute('hidden');
         } else {
-          seg.removeAttribute('hidden');
-          naToggle.removeAttribute('hidden');
+          seg.removeAttribute('hidden'); naToggle.removeAttribute('hidden');
           naActive.setAttribute('hidden', '');
           root.querySelectorAll('.js-status-btn').forEach((btn) => {
             const s = btn.getAttribute('data-status');
@@ -77,18 +205,22 @@
       });
     }
 
-    /* Render progress bar */
     function renderProgress() {
       const bar = document.querySelector('.js-progress');
       if (!bar) return;
-      const items = read();
-      const ids = Array.from(document.querySelectorAll('[data-progress-id]'))
-        .map((el) => el.getAttribute('data-progress-id'))
-        .filter(Boolean);
-      const uniq = Array.from(new Set(ids));
-      const total = uniq.length;
-      if (total === 0) return;
-      const handled = uniq.filter((id) => {
+      const items = readChecklist();
+      const profile = readProfile();
+      const cards = Array.from(document.querySelectorAll('[data-progress-id]'));
+      const visible = cards.filter((c) => {
+        const id = c.getAttribute('data-progress-id');
+        if (!profile || profile.showAll) return true;
+        return appliesTo(id, profile);
+      });
+      const ids = Array.from(new Set(visible.map((c) => c.getAttribute('data-progress-id')).filter(Boolean)));
+      const total = ids.length;
+      if (total === 0) { bar.setAttribute('hidden', ''); return; }
+      bar.removeAttribute('hidden');
+      const handled = ids.filter((id) => {
         const it = items[id];
         return it && (it.status === 'done' || it.status === 'not-applicable');
       }).length;
@@ -100,17 +232,25 @@
     }
 
     function renderAll() {
+      applyState();
       renderCardBadges();
       renderSegmented();
       renderProgress();
     }
 
+    /* ── Bind events ────────────────────────────────────── */
+
+    function setMain(state) {
+      const main = document.querySelector('[data-page="home"]');
+      if (main) main.setAttribute('data-state', state);
+    }
+
     function bind() {
+      // Status control (detail page)
       document.querySelectorAll('.js-status-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
           const root = btn.closest('.status-control');
-          if (!root) return;
-          const taxId = root.getAttribute('data-tax-id');
+          const taxId = root && root.getAttribute('data-tax-id');
           const status = btn.getAttribute('data-status');
           if (!taxId || !status) return;
           setStatus(taxId, status);
@@ -120,8 +260,7 @@
       document.querySelectorAll('.js-na-toggle').forEach((btn) => {
         btn.addEventListener('click', () => {
           const root = btn.closest('.status-control');
-          if (!root) return;
-          const taxId = root.getAttribute('data-tax-id');
+          const taxId = root && root.getAttribute('data-tax-id');
           if (!taxId) return;
           setStatus(taxId, 'not-applicable');
           renderAll();
@@ -130,33 +269,96 @@
       document.querySelectorAll('.js-na-undo').forEach((btn) => {
         btn.addEventListener('click', () => {
           const root = btn.closest('.status-control');
-          if (!root) return;
-          const taxId = root.getAttribute('data-tax-id');
+          const taxId = root && root.getAttribute('data-tax-id');
           if (!taxId) return;
           setStatus(taxId, 'not-started');
           renderAll();
         });
       });
-      const clearBtn = document.querySelector('.js-clear-checklist');
-      if (clearBtn) {
-        clearBtn.addEventListener('click', (e) => {
+
+      // Welcome card
+      const startBtn = document.querySelector('.js-welcome-start');
+      if (startBtn) startBtn.addEventListener('click', () => setMain('survey'));
+      const skipBtn = document.querySelector('.js-welcome-skip');
+      if (skipBtn) skipBtn.addEventListener('click', () => {
+        writeProfile({ showAll: true });
+        renderAll();
+        scrollToList();
+      });
+
+      // Survey form
+      const form = document.querySelector('.js-survey-form');
+      if (form) {
+        form.addEventListener('submit', (e) => {
           e.preventDefault();
-          clear();
+          const fd = new FormData(form);
+          const profile = {
+            residency: String(fd.get('residency') || 'unsure'),
+            filing:    String(fd.get('filing') || 'unsure'),
+            income:    String(fd.get('income') || 'unsure'),
+          };
+          writeProfile(profile);
           renderAll();
-          const note = document.querySelector('.js-cleared-note');
-          if (note) {
-            note.removeAttribute('hidden');
-            setTimeout(() => note.setAttribute('hidden', ''), 2500);
-          }
+          scrollToList();
+        });
+        const surveyBack = form.querySelector('.js-survey-skip');
+        if (surveyBack) surveyBack.addEventListener('click', () => {
+          writeProfile({ showAll: true });
+          renderAll();
+          scrollToList();
         });
       }
+
+      // Result banner buttons
+      const showAllBtn = document.querySelector('.js-result-show-all');
+      if (showAllBtn) showAllBtn.addEventListener('click', () => {
+        writeProfile({ showAll: true });
+        renderAll();
+      });
+      const editBtn = document.querySelector('.js-result-edit');
+      if (editBtn) editBtn.addEventListener('click', () => {
+        remove(KEY_PROFILE);
+        setMain('survey');
+        prefillSurvey();
+      });
+      const skippedEdit = document.querySelector('.js-skipped-edit');
+      if (skippedEdit) skippedEdit.addEventListener('click', () => {
+        remove(KEY_PROFILE);
+        setMain('survey');
+      });
+
+      // Clear all progress
+      const clearBtn = document.querySelector('.js-clear-checklist');
+      if (clearBtn) clearBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        remove(KEY_CHECKLIST);
+        renderAll();
+        const note = document.querySelector('.js-cleared-note');
+        if (note) {
+          note.removeAttribute('hidden');
+          setTimeout(() => note.setAttribute('hidden', ''), 2500);
+        }
+      });
+    }
+
+    function prefillSurvey() {
+      // No-op: profile was cleared, fields start fresh.
+    }
+
+    function scrollToList() {
+      const list = document.querySelector('.js-tax-list, .js-result');
+      if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function init() {
+      renderAll();
+      bind();
     }
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => { renderAll(); bind(); });
+      document.addEventListener('DOMContentLoaded', init);
     } else {
-      renderAll();
-      bind();
+      init();
     }
   })();
 </script>
