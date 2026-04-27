@@ -1,0 +1,48 @@
+---
+import type { Lang } from '../i18n/ui';
+import { t } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  taxId: string;
+}
+
+const { lang, taxId } = Astro.props;
+
+const labels = {
+  'not-started': t(lang, 'status.not_started'),
+  'in-progress': t(lang, 'status.in_progress'),
+  'done': t(lang, 'status.done'),
+  'not-applicable': t(lang, 'status.not_applicable'),
+};
+---
+
+<div class="status-control" data-tax-id={taxId} data-labels={JSON.stringify(labels)}>
+  <span class="status-control__label">{t(lang, 'status.label')}</span>
+  <div role="group" aria-label={t(lang, 'status.label')} class="segmented js-segmented" data-active>
+    <button type="button" class="segmented__btn js-status-btn" data-status="not-started" aria-pressed="true">
+      <span aria-hidden="true">○</span>
+      {labels['not-started']}
+    </button>
+    <button type="button" class="segmented__btn js-status-btn" data-status="in-progress" aria-pressed="false">
+      <span aria-hidden="true">●</span>
+      {labels['in-progress']}
+    </button>
+    <button type="button" class="segmented__btn js-status-btn" data-status="done" aria-pressed="false">
+      <span aria-hidden="true">✓</span>
+      {labels['done']}
+    </button>
+  </div>
+
+  <div class="status-na js-status-na">
+    <button type="button" class="btn btn--ghost js-na-toggle" data-status="not-applicable">
+      {labels['not-applicable']} →
+    </button>
+  </div>
+
+  <div class="status-na__active js-status-na-active" hidden>
+    <span aria-hidden="true">—</span>
+    <span>{labels['not-applicable']}</span>
+    <button type="button" class="js-na-undo">{t(lang, 'status.undo_na')}</button>
+  </div>
+</div>

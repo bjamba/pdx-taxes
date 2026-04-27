@@ -1,7 +1,8 @@
 ---
 import type { Lang } from '../i18n/ui';
-import { langPrefix, t } from '../i18n/ui';
+import { t, localeHome } from '../i18n/ui';
 import LanguageSwitcher from './LanguageSwitcher.astro';
+import BrandMark from './BrandMark.astro';
 
 interface Props {
   lang: Lang;
@@ -9,12 +10,15 @@ interface Props {
 }
 
 const { lang, path } = Astro.props;
-const homeHref = lang === 'en' ? '/' : `/${lang}`;
+const homeHref = localeHome(lang);
 ---
 
 <header class="site-header">
   <div class="site-header__inner">
-    <a href={homeHref} class="site-wordmark">{t(lang, 'site.name')}</a>
+    <a href={homeHref} class="brand">
+      <BrandMark />
+      <span class="brand-name">{t(lang, 'site.name')}</span>
+    </a>
     <LanguageSwitcher lang={lang} path={path} />
   </div>
 </header>

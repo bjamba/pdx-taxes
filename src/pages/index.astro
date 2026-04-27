@@ -1,9 +1,9 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import StatusPill from '../components/StatusPill.astro';
 import Disclaimer from '../components/Disclaimer.astro';
-import { t } from '../i18n/ui';
+import TaxCard from '../components/TaxCard.astro';
+import { t, taxUrl } from '../i18n/ui';
 
 const lang = 'en' as const;
 const taxes = (await getCollection('taxes-en')).sort(
@@ -11,45 +11,47 @@ const taxes = (await getCollection('taxes-en')).sort(
 );
 ---
 
-<BaseLayout lang={lang} path="" title={t(lang, 'site.tagline')}>
-  <h1>{t(lang, 'site.tagline')}</h1>
-  <p class="lead">{t(lang, 'home.lead')}</p>
+<BaseLayout lang={lang} path="" title="Local Portland taxes, in one place">
+  <section class="hero">
+    <span class="hero__eyebrow">{t(lang, 'hero.eyebrow')}</span>
+    <h1 class="hero__title">
+      {t(lang, 'hero.title_a')} <em>{t(lang, 'hero.title_em')}</em> {t(lang, 'hero.title_b')}
+    </h1>
+    <p class="hero__lead">{t(lang, 'hero.lead')}</p>
+  </section>
 
   <Disclaimer lang={lang} />
 
-  <h2>{t(lang, 'home.intro_title')}</h2>
-  <p>{t(lang, 'home.intro_body')}</p>
-
-  <div class="progress-bar js-progress" role="status" aria-label={t(lang, 'checklist.progress')}>
-    <span class="progress-bar__label tabular">0/0</span>
-    <div class="progress-bar__track" aria-hidden="true">
-      <div class="progress-bar__fill" style="width: 0%"></div>
+  <div class="progress js-progress" role="status" aria-label={t(lang, 'checklist.progress')}>
+    <div class="progress__top">
+      <span class="progress__title">{t(lang, 'checklist.title')}</span>
+      <span class="progress__count tabular">0 / {taxes.length}</span>
+    </div>
+    <div class="progress__track" aria-hidden="true">
+      <div class="progress__fill" style="width: 0%"></div>
     </div>
   </div>
 
   <ul class="tax-list">
     {taxes.map((tax) => (
       <li>
-        <a href={`/${tax.data.slug}`} class="tax-card">
-          <div class="tax-card__top">
-            <div>
-              <div class="tax-card__title">{tax.data.name}</div>
-              <div class="tax-card__juris">{t(lang, `jurisdiction.${tax.data.jurisdiction}` as any)}</div>
-            </div>
-            <StatusPill lang={lang} taxId={tax.data.id} />
-          </div>
-          <p class="tax-card__summary">{tax.data.summary}</p>
-          <div class="tax-card__meta">
-            <span><strong>{t(lang, 'tax.deadline')}:</strong> <span class="tabular">{tax.data.deadline}</span></span>
-            <span><strong>{t(lang, 'tax.rate')}:</strong> {tax.data.rate_summary.split('.')[0]}</span>
-          </div>
-        </a>
+        <TaxCard
+          lang={lang}
+          href={taxUrl(lang, tax.data.slug)}
+          taxId={tax.data.id}
+          jurisdiction={tax.data.jurisdiction}
+          jurisdictionLabel={t(lang, `jurisdiction.${tax.data.jurisdiction}` as any)}
+          name={tax.data.name}
+          summary={tax.data.summary}
+          rateSummary={tax.data.rate_summary.split('.')[0]}
+          deadline={tax.data.deadline}
+        />
       </li>
     ))}
   </ul>
 
-  <p style="margin-top: var(--space-8); display: flex; gap: var(--space-3); align-items: center;">
+  <p style="margin-top: var(--space-10); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
     <button type="button" class="btn btn--ghost js-clear-checklist">{t(lang, 'checklist.clear')}</button>
-    <span class="js-cleared-note" hidden style="font-size: 14px; color: var(--ink-soft);">{t(lang, 'checklist.cleared')}</span>
+    <span class="cleared-note js-cleared-note" hidden>✓ {t(lang, 'checklist.cleared')}</span>
   </p>
 </BaseLayout>

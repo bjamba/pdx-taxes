@@ -1,9 +1,9 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import StatusPill from '../components/StatusPill.astro';
+import SegmentedStatus from '../components/SegmentedStatus.astro';
 import Disclaimer from '../components/Disclaimer.astro';
-import { t } from '../i18n/ui';
+import { t, localeHome } from '../i18n/ui';
 
 export async function getStaticPaths() {
   const taxes = await getCollection('taxes-en');
@@ -20,16 +20,15 @@ const path = `/${data.slug}`;
 ---
 
 <BaseLayout lang={lang} path={path} title={data.name} description={data.summary}>
-  <a href="/" class="detail-back">← {t(lang, 'tax.back')}</a>
+  <a href={localeHome(lang)} class="detail-back">← {t(lang, 'tax.back')}</a>
 
-  <p class="detail-juris">{t(lang, `jurisdiction.${data.jurisdiction}` as any)}</p>
+  <span class="detail-juris-tag" data-juris={data.jurisdiction}>
+    {t(lang, `jurisdiction.${data.jurisdiction}` as any)}
+  </span>
   <h1>{data.name}</h1>
-
-  <div class="detail-status-row">
-    <StatusPill lang={lang} taxId={data.id} interactive />
-  </div>
-
   <p class="lead">{data.summary}</p>
+
+  <SegmentedStatus lang={lang} taxId={data.id} />
 
   <Disclaimer lang={lang} />
 
@@ -63,7 +62,8 @@ const path = `/${data.slug}`;
 
   {data.friendly_note && (
     <aside class="callout callout--friendly">
-      <p><strong>{t(lang, 'tax.friendly_note')}.</strong> {data.friendly_note}</p>
+      <p class="callout__title">☼ {t(lang, 'tax.friendly_note')}</p>
+      <p>{data.friendly_note}</p>
     </aside>
   )}
 
@@ -87,5 +87,7 @@ const path = `/${data.slug}`;
     </ul>
   </section>
 
-  <p class="verified">{t(lang, 'tax.last_verified')}: <span class="tabular">{data.last_verified}</span></p>
+  <p class="verified">
+    <span>{t(lang, 'tax.last_verified')}: <span class="tabular">{data.last_verified}</span></span>
+  </p>
 </BaseLayout>

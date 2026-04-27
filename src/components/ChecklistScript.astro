@@ -1,24 +1,10 @@
 ---
-// Inlined client script that powers the checklist on home + tax-detail pages.
-// State lives in localStorage only — never transmitted.
+// Client-only checklist + status control. State lives in localStorage.
 ---
 
 <script is:inline>
   (function () {
     const STORAGE_KEY = 'pdx-taxes:checklist:v1';
-    const STATUSES = ['not-started', 'in-progress', 'done', 'not-applicable'];
-    const ICONS = {
-      'not-started': '○',
-      'in-progress': '●',
-      'done': '✓',
-      'not-applicable': '—',
-    };
-    const PILL_CLASSES = {
-      'not-started': 'pill',
-      'in-progress': 'pill pill--in-progress',
-      'done': 'pill pill--done',
-      'not-applicable': 'pill pill--not-applicable',
-    };
 
     function read() {
       try {
@@ -26,84 +12,129 @@
         if (!raw) return {};
         const parsed = JSON.parse(raw);
         return (parsed && typeof parsed === 'object' && parsed.items) ? parsed.items : {};
-      } catch {
-        return {};
-      }
+      } catch { return {}; }
     }
-
     function write(items) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, items }));
-      } catch {}
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, items })); } catch {}
     }
-
     function clear() {
       try { localStorage.removeItem(STORAGE_KEY); } catch {}
     }
-
-    function applyPillState(pill, status, labels) {
-      const isButton = pill.tagName === 'BUTTON';
-      pill.className = (PILL_CLASSES[status] || PILL_CLASSES['not-started']) + (isButton ? ' js-status-pill' : ' js-status-pill');
-      const icon = pill.querySelector('.pill__icon');
-      const label = pill.querySelector('.pill__label');
-      if (icon) icon.textContent = ICONS[status];
-      if (label) label.textContent = labels[status];
-    }
-
-    function renderAllPills() {
+    function setStatus(taxId, status) {
       const items = read();
-      document.querySelectorAll('.js-status-pill').forEach((pill) => {
-        const taxId = pill.getAttribute('data-tax-id');
-        if (!taxId) return;
-        let labels;
-        try {
-          labels = JSON.parse(pill.getAttribute('data-labels') || '{}');
-        } catch { labels = {}; }
-        const current = (items[taxId] && items[taxId].status) || 'not-started';
-        applyPillState(pill, current, labels);
-      });
-      renderProgress();
+      items[taxId] = { status, updated_at: new Date().toISOString() };
+      write(items);
+    }
+    function getStatus(taxId) {
+      const items = read();
+      return (items[taxId] && items[taxId].status) || 'not-started';
     }
 
+    const STATUS_ICONS = { 'not-started': '○', 'in-progress': '●', 'done': '✓', 'not-applicable': '—' };
+
+    /* Render the small status badge on tax cards (home page) */
+    function renderCardBadges() {
+      document.querySelectorAll('.js-card-status').forEach((badge) => {
+        const taxId = badge.getAttribute('data-tax-id');
+        if (!taxId) return;
+        const status = getStatus(taxId);
+        let labels = {};
+        try { labels = JSON.parse(badge.getAttribute('data-labels') || '{}'); } catch {}
+        badge.className = 'tax-card__status js-card-status' + (status !== 'not-started' ? ' tax-card__status--' + status : '');
+        const dot = badge.querySelector('.tax-card__status-dot');
+        const label = badge.querySelector('.tax-card__status-label');
+        if (label) label.textContent = labels[status] || labels['not-started'] || '';
+        if (dot) dot.style.background = (status === 'done' ? 'var(--portland)' :
+                                         status === 'in-progress' ? 'var(--metro)' :
+                                         status === 'not-applicable' ? 'var(--ink-faint)' :
+                                         'var(--ink-faint)');
+      });
+    }
+
+    /* Render the segmented control on detail pages */
+    function renderSegmented() {
+      document.querySelectorAll('.status-control').forEach((root) => {
+        const taxId = root.getAttribute('data-tax-id');
+        if (!taxId) return;
+        const status = getStatus(taxId);
+        const seg = root.querySelector('.js-segmented');
+        const naToggle = root.querySelector('.js-status-na');
+        const naActive = root.querySelector('.js-status-na-active');
+        if (!seg || !naToggle || !naActive) return;
+        if (status === 'not-applicable') {
+          seg.setAttribute('hidden', '');
+          naToggle.setAttribute('hidden', '');
+          naActive.removeAttribute('hidden');
+        } else {
+          seg.removeAttribute('hidden');
+          naToggle.removeAttribute('hidden');
+          naActive.setAttribute('hidden', '');
+          root.querySelectorAll('.js-status-btn').forEach((btn) => {
+            const s = btn.getAttribute('data-status');
+            btn.setAttribute('aria-pressed', s === status ? 'true' : 'false');
+          });
+        }
+      });
+    }
+
+    /* Render progress bar */
     function renderProgress() {
       const bar = document.querySelector('.js-progress');
       if (!bar) return;
       const items = read();
-      const allTaxIds = Array.from(document.querySelectorAll('.js-status-pill'))
-        .map((p) => p.getAttribute('data-tax-id'))
+      const ids = Array.from(document.querySelectorAll('[data-progress-id]'))
+        .map((el) => el.getAttribute('data-progress-id'))
         .filter(Boolean);
-      // Dedupe (in case a tax appears multiple times)
-      const uniq = Array.from(new Set(allTaxIds));
+      const uniq = Array.from(new Set(ids));
       const total = uniq.length;
       if (total === 0) return;
-      const done = uniq.filter((id) => {
+      const handled = uniq.filter((id) => {
         const it = items[id];
         return it && (it.status === 'done' || it.status === 'not-applicable');
       }).length;
-      const fill = bar.querySelector('.progress-bar__fill');
-      const labelEl = bar.querySelector('.progress-bar__label');
-      const pct = Math.round((done / total) * 100);
+      const fill = bar.querySelector('.progress__fill');
+      const count = bar.querySelector('.progress__count');
+      const pct = Math.round((handled / total) * 100);
       if (fill) fill.style.width = pct + '%';
-      if (labelEl) labelEl.textContent = done + '/' + total;
+      if (count) count.textContent = handled + ' / ' + total;
     }
 
-    function cycleStatus(taxId) {
-      const items = read();
-      const current = (items[taxId] && items[taxId].status) || 'not-started';
-      const idx = STATUSES.indexOf(current);
-      const next = STATUSES[(idx + 1) % STATUSES.length];
-      items[taxId] = { status: next, updated_at: new Date().toISOString() };
-      write(items);
-      renderAllPills();
+    function renderAll() {
+      renderCardBadges();
+      renderSegmented();
+      renderProgress();
     }
 
     function bind() {
-      document.querySelectorAll('button.js-status-pill').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const id = btn.getAttribute('data-tax-id');
-          if (id) cycleStatus(id);
+      document.querySelectorAll('.js-status-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const root = btn.closest('.status-control');
+          if (!root) return;
+          const taxId = root.getAttribute('data-tax-id');
+          const status = btn.getAttribute('data-status');
+          if (!taxId || !status) return;
+          setStatus(taxId, status);
+          renderAll();
+        });
+      });
+      document.querySelectorAll('.js-na-toggle').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const root = btn.closest('.status-control');
+          if (!root) return;
+          const taxId = root.getAttribute('data-tax-id');
+          if (!taxId) return;
+          setStatus(taxId, 'not-applicable');
+          renderAll();
+        });
+      });
+      document.querySelectorAll('.js-na-undo').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const root = btn.closest('.status-control');
+          if (!root) return;
+          const taxId = root.getAttribute('data-tax-id');
+          if (!taxId) return;
+          setStatus(taxId, 'not-started');
+          renderAll();
         });
       });
       const clearBtn = document.querySelector('.js-clear-checklist');
@@ -111,7 +142,7 @@
         clearBtn.addEventListener('click', (e) => {
           e.preventDefault();
           clear();
-          renderAllPills();
+          renderAll();
           const note = document.querySelector('.js-cleared-note');
           if (note) {
             note.removeAttribute('hidden');
@@ -122,9 +153,9 @@
     }
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => { renderAllPills(); bind(); });
+      document.addEventListener('DOMContentLoaded', () => { renderAll(); bind(); });
     } else {
-      renderAllPills();
+      renderAll();
       bind();
     }
   })();
