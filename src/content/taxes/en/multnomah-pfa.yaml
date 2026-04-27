@@ -24,7 +24,7 @@ rate:
       threshold_single_usd: 250000
       threshold_joint_usd: 400000
 
-rate_summary: 1.5% on Multnomah County taxable income above $125,000 (single) or $200,000 (joint), plus an additional 1.5% on income above $250,000 (single) or $400,000 (joint).
+rate_summary: 1.5% above $125k single or $200k joint; an extra 1.5% above $250k or $400k.
 
 deadline: "April 15, 2026"
 

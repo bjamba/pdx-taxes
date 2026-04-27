@@ -1165,6 +1165,7 @@ ul { list-style: none; }
 [data-state="welcome"] .js-progress,
 [data-state="welcome"] .js-celebration,
 [data-state="welcome"] .js-aggregate,
+[data-state="welcome"] .js-calc-panel,
 [data-state="welcome"] .js-clear-row { display: none; }
 
 [data-state="survey"] .js-welcome,
@@ -1174,6 +1175,7 @@ ul { list-style: none; }
 [data-state="survey"] .js-progress,
 [data-state="survey"] .js-celebration,
 [data-state="survey"] .js-aggregate,
+[data-state="survey"] .js-calc-panel,
 [data-state="survey"] .js-clear-row { display: none; }
 
 [data-state="result"] .js-welcome,
@@ -1191,7 +1193,9 @@ ul { list-style: none; }
 [data-state="done"] .js-result,
 [data-state="done"] .js-skipped-banner,
 [data-state="done"] .js-deck,
-[data-state="done"] .js-progress { display: none; }
+[data-state="done"] .js-progress,
+[data-state="done"] .js-calc-panel,
+[data-state="done"] .js-aggregate { display: none; }
 
 /* When filtering by profile, hide cards that don't apply */
 .deck[data-filter="on"] .deck__card[data-applies="false"] { display: none !important; }
@@ -1437,7 +1441,226 @@ ul { list-style: none; }
 .deck[data-empty="true"] .deck__nav { display: none; }
 .deck[data-empty="true"] .deck__empty { display: block; }
 
-/* ─── Estimator (inline calculator) ─────────────────────────── */
+/* ─── Calc panel (single shared inputs) ────────────────────── */
+
+.calc-panel {
+  background: var(--surface);
+  border: 2.5px solid var(--ink);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin: var(--space-6) 0;
+  box-shadow: 0 5px 0 var(--ink);
+  position: relative;
+  overflow: hidden;
+}
+.calc-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 8px;
+  background: linear-gradient(90deg, var(--portland), var(--metro), var(--multnomah));
+}
+.calc-panel__head {
+  margin-bottom: var(--space-5);
+  padding-top: var(--space-2);
+}
+.calc-panel__eyebrow {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--metro-deep);
+  background: var(--metro-soft);
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-3);
+}
+.calc-panel__title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3.5vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-2);
+}
+.calc-panel__lead {
+  color: var(--ink-soft);
+  font-size: 16px;
+  margin: 0;
+}
+.calc-panel__inputs {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+@media (max-width: 600px) {
+  .calc-panel__inputs { grid-template-columns: 1fr; }
+}
+.calc-panel__field {
+  border: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.calc-panel__field legend,
+.calc-panel__legend {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.calc-panel__radios {
+  display: inline-flex;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: 0 3px 0 var(--ink);
+}
+.calc-panel__radio {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  border-right: 2px solid var(--ink);
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.calc-panel__radio:last-child { border-right: 0; }
+.calc-panel__radio input { position: absolute; opacity: 0; pointer-events: none; }
+.calc-panel__radio:hover { background: var(--surface-warm); }
+.calc-panel__radio:has(input:checked) {
+  background: var(--ink);
+  color: var(--paper);
+}
+.calc-panel__radio:has(input:focus-visible) {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+  z-index: 1;
+}
+.calc-panel__input-wrap {
+  display: flex;
+  align-items: stretch;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  overflow: hidden;
+  box-shadow: 0 3px 0 var(--ink);
+  position: relative;
+}
+.calc-panel__currency {
+  padding: 0 var(--space-3);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 700;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-display);
+}
+.calc-panel__input {
+  flex: 1;
+  border: 0;
+  padding: 14px 16px;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  background: var(--paper);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+.calc-panel__input:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+}
+.calc-panel__clear {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--ink-faint);
+  font-size: 24px;
+  padding: 0 var(--space-4);
+  cursor: pointer;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+}
+.calc-panel__clear:hover { color: var(--ink); background: var(--surface); }
+.calc-panel__hint {
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* ─── Card-level estimate slot (fixed height, lives on every card) ── */
+
+.card-est {
+  margin: var(--space-4) 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1.5px dashed var(--border);
+  background: var(--paper);
+  min-height: 64px;
+  transition: background 200ms ease-out, border-color 200ms ease-out;
+}
+.card-est__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.card-est__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.card-est__amount {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.card-est__hint {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+/* States */
+.card-est[data-state="computed"] {
+  background: var(--portland-soft);
+  border: 1.5px solid var(--portland);
+}
+.card-est[data-state="computed"] .card-est__amount {
+  color: var(--portland-deep);
+}
+.card-est[data-state="below"] {
+  background: var(--surface);
+  border: 1.5px solid var(--surface-edge);
+}
+.card-est[data-state="below"] .card-est__amount {
+  color: var(--ink-soft);
+  font-size: 16px;
+}
+.card-est[data-state="na"] {
+  background: var(--paper);
+  border: 1.5px dashed var(--ink-faint);
+  opacity: 0.6;
+}
+
+/* ─── Old estimator (no longer used; kept for safety / detail page) ── */
 
 .estimator {
   margin: var(--space-2) 0 var(--space-4);

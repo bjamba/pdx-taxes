@@ -1,0 +1,52 @@
+---
+import type { Lang } from '../i18n/ui';
+import { t } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<section class="calc-panel js-calc-panel" aria-label="Tax estimator inputs">
+  <div class="calc-panel__head">
+    <span class="calc-panel__eyebrow">{t(lang, 'calc.eyebrow')}</span>
+    <h2 class="calc-panel__title">{t(lang, 'calc.title')}</h2>
+    <p class="calc-panel__lead">{t(lang, 'calc.lead')}</p>
+  </div>
+
+  <div class="calc-panel__inputs">
+    <fieldset class="calc-panel__field calc-panel__field--filing">
+      <legend>{t(lang, 'calc.filing_label')}</legend>
+      <div class="calc-panel__radios">
+        <label class="calc-panel__radio">
+          <input type="radio" name="calc-filing" value="single" class="js-calc-filing" checked />
+          <span>{t(lang, 'survey.q2_single')}</span>
+        </label>
+        <label class="calc-panel__radio">
+          <input type="radio" name="calc-filing" value="joint" class="js-calc-filing" />
+          <span>{t(lang, 'survey.q2_joint')}</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <label class="calc-panel__field calc-panel__field--income">
+      <span class="calc-panel__legend">{t(lang, 'calc.income_label')}</span>
+      <span class="calc-panel__input-wrap">
+        <span class="calc-panel__currency">$</span>
+        <input
+          type="number"
+          class="calc-panel__input js-calc-income"
+          placeholder="0"
+          inputmode="numeric"
+          min="0"
+          step="1000"
+          aria-label="Taxable income"
+        />
+        <button type="button" class="calc-panel__clear js-calc-clear" aria-label="Clear income">×</button>
+      </span>
+      <span class="calc-panel__hint">🔒 {t(lang, 'calc.privacy')}</span>
+    </label>
+  </div>
+</section>

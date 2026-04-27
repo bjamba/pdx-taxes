@@ -24,7 +24,7 @@ rate:
       threshold_single_usd: 250000
       threshold_joint_usd: 400000
 
-rate_summary: 1.5% sobre los ingresos imponibles del Condado de Multnomah por encima de $125,000 (individual) o $200,000 (conjunta), más un 1.5% adicional sobre los ingresos por encima de $250,000 (individual) o $400,000 (conjunta).
+rate_summary: 1.5% sobre $125k individual o $200k conjunta; 1.5% extra sobre $250k o $400k.
 
 deadline: "15 de abril de 2026"
 

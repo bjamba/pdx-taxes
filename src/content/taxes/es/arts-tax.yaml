@@ -18,7 +18,7 @@ rate:
   type: flat
   amount_usd: 35
 
-rate_summary: Una cuota fija de $35 por persona, por año.
+rate_summary: Una cuota fija de $35 por persona, por año
 
 deadline: "15 de abril de 2026"
 

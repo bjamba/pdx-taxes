@@ -20,7 +20,7 @@ rate:
   threshold_single_usd: 128000
   threshold_joint_usd: 205000
 
-rate_summary: 1% de los ingresos imponibles de Metro por encima del umbral ($128,000 individual / $205,000 conjunta para el año fiscal 2026, ajustado por inflación cada año).
+rate_summary: 1% sobre ingresos por encima de $128k individual o $205k conjunta.
 
 deadline: "15 de abril de 2026"
 

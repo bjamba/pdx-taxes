@@ -2,13 +2,6 @@
 import type { Lang } from '../i18n/ui';
 import { t, taxUrl } from '../i18n/ui';
 import SegmentedStatus from './SegmentedStatus.astro';
-import Estimator from './Estimator.astro';
-
-const ESTIMATOR_TYPE: Record<string, 'arts' | 'pfa' | 'shs'> = {
-  'arts-tax': 'arts',
-  'multnomah-pfa': 'pfa',
-  'metro-shs': 'shs',
-};
 
 interface TaxData {
   data: {
@@ -66,7 +59,7 @@ const { lang, taxes } = Astro.props;
         <dl class="deck__card-defs">
           <div>
             <dt>{t(lang, 'tax.rate')}</dt>
-            <dd>{tax.data.rate_summary.split('.')[0]}</dd>
+            <dd>{tax.data.rate_summary}</dd>
           </div>
           <div>
             <dt>{t(lang, 'tax.deadline')}</dt>
@@ -74,11 +67,16 @@ const { lang, taxes } = Astro.props;
           </div>
         </dl>
 
-        <SegmentedStatus lang={lang} taxId={tax.data.id} compact />
+        <!-- Per-card estimate slot — fixed height; updates live as user types in CalcPanel -->
+        <div class="card-est js-card-est" data-state="empty" data-tax-id={tax.data.id}>
+          <div class="card-est__row">
+            <span class="card-est__label">{t(lang, 'card_est.label')}</span>
+            <span class="card-est__amount tabular js-card-est-amount">—</span>
+          </div>
+          <div class="card-est__hint js-card-est-hint">{t(lang, 'card_est.empty')}</div>
+        </div>
 
-        {ESTIMATOR_TYPE[tax.data.id] && (
-          <Estimator lang={lang} taxId={tax.data.id} type={ESTIMATOR_TYPE[tax.data.id]} />
-        )}
+        <SegmentedStatus lang={lang} taxId={tax.data.id} compact />
 
         <div class="deck__card-actions">
           <a href={tax.data.filing_url} class="btn btn--primary" target="_blank" rel="noopener">

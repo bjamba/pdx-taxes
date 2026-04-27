@@ -20,7 +20,7 @@ rate:
   threshold_single_usd: 128000
   threshold_joint_usd: 205000
 
-rate_summary: 1% of Metro taxable income above the threshold ($128,000 single / $205,000 joint for tax year 2026, adjusted for inflation each year).
+rate_summary: 1% on income above $128k single or $205k joint.
 
 deadline: "April 15, 2026"
 

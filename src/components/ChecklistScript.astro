@@ -1,14 +1,17 @@
 ---
-// Single client script: profile / state machine / checklist.
-// All state lives in localStorage. Nothing is transmitted.
+// Single client-side script: profile / state machine / checklist /
+// shared estimator / aggregate / calendar. State in localStorage only.
 ---
 
 <script is:inline>
   (function () {
     const KEY_CHECKLIST = 'pdx-taxes:checklist:v1';
     const KEY_PROFILE   = 'pdx-taxes:profile:v1';
+    const KEY_CALC      = 'pdx-taxes:calc:v1'; // { filing: 'single'|'joint', income: number }
 
-    /* ── Storage ───────────────────────────────────────────── */
+    const TAX_IDS = ['arts-tax', 'multnomah-pfa', 'metro-shs'];
+
+    /* ── Storage ─────────────────────────────────────────── */
     const readJSON = (k) => {
       try { return JSON.parse(localStorage.getItem(k) || 'null') || null; }
       catch { return null; }
@@ -31,14 +34,13 @@
       return (items[taxId] && items[taxId].status) || 'not-started';
     };
 
-    /** profile = { residency, filing, income } | { showAll: true } | null */
     const readProfile = () => readJSON(KEY_PROFILE);
     const writeProfile = (p) => writeJSON(KEY_PROFILE, p);
 
-    /* ── Applicability logic ─────────────────────────────────
-     * Conservative: when in doubt, INCLUDE. We'd rather show a
-     * tax that doesn't apply than miss one that does.
-     */
+    const readCalc = () => readJSON(KEY_CALC) || { filing: 'single', income: null };
+    const writeCalc = (v) => writeJSON(KEY_CALC, v);
+
+    /* ── Applicability ─────────────────────────────────── */
     function appliesTo(taxId, p) {
       if (!p || p.showAll) return true;
       const inPortland = ['portland', 'unsure'].includes(p.residency);
@@ -53,18 +55,42 @@
       }
     }
 
-    /* ── State derivation ─────────────────────────────────── */
+    /* ── Estimator math ────────────────────────────────── */
+    function fmtUSD(n) {
+      try { return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
+      catch { return '$' + Math.round(n).toLocaleString(); }
+    }
+    function computeArts(profile) {
+      const inPortland = profile && (profile.residency === 'portland' || profile.residency === 'unsure');
+      if (!inPortland) return { applies: false, amount: 0, state: 'na' };
+      return { applies: true, amount: 35, state: 'computed' };
+    }
+    function computePFA(filing, income) {
+      const isJoint = filing === 'joint';
+      const t1 = isJoint ? 200000 : 125000;
+      const t2 = isJoint ? 400000 : 250000;
+      const inc = Math.max(0, income || 0);
+      if (inc <= t1) return { applies: false, amount: 0, state: 'below' };
+      const band1 = Math.min(inc, t2) - t1;
+      const band2 = Math.max(0, inc - t2);
+      return { applies: true, amount: band1 * 0.015 + band2 * 0.030, state: 'computed' };
+    }
+    function computeSHS(filing, income) {
+      const isJoint = filing === 'joint';
+      const threshold = isJoint ? 205000 : 128000;
+      const taxable = Math.max(0, (income || 0) - threshold);
+      if (taxable === 0) return { applies: false, amount: 0, state: 'below' };
+      return { applies: true, amount: taxable * 0.01, state: 'computed' };
+    }
+
+    /* ── State derivation ─────────────────────────────── */
     function deriveState() {
       const profile = readProfile();
       if (!profile) return { state: 'welcome', profile: null };
-      if (profile.showAll) {
-        return { state: doneState('skipped'), profile };
-      }
-      return { state: doneState('result'), profile };
+      const fallback = profile.showAll ? 'skipped' : 'result';
+      return { state: doneStateOr(fallback, profile), profile };
     }
-    function doneState(orElse) {
-      // If every visible (applicable) tax is done or n/a, show celebration.
-      const profile = readProfile();
+    function doneStateOr(fallback, profile) {
       const items = readChecklist();
       const cards = Array.from(document.querySelectorAll('[data-progress-id]'));
       const visible = cards.filter((c) => {
@@ -73,25 +99,23 @@
         if (!profile || profile.showAll) return true;
         return appliesTo(id, profile);
       });
-      if (visible.length === 0) return orElse;
+      if (visible.length === 0) return fallback;
       const allHandled = visible.every((c) => {
         const id = c.getAttribute('data-progress-id');
         const s = (items[id] && items[id].status) || 'not-started';
         return s === 'done' || s === 'not-applicable';
       });
-      return allHandled ? 'done' : orElse;
+      return allHandled ? 'done' : fallback;
     }
 
-    /* ── Render ──────────────────────────────────────────── */
+    /* ── Renderers ─────────────────────────────────────── */
 
     function applyState() {
-      const root = document.documentElement;
       const main = document.querySelector('[data-page="home"]');
-      if (!main) return; // detail page — no state machine
+      if (!main) return;
       const { state, profile } = deriveState();
       main.setAttribute('data-state', state);
 
-      // Filter deck cards based on profile
       const deck = document.querySelector('.js-deck');
       if (deck) {
         if (profile && !profile.showAll) {
@@ -107,25 +131,19 @@
           });
         } else {
           deck.removeAttribute('data-filter');
-          deck.querySelectorAll('.deck__card').forEach((card) => card.setAttribute('data-applies', 'true'));
+          deck.querySelectorAll('.deck__card').forEach((c) => c.setAttribute('data-applies', 'true'));
           deck.querySelectorAll('.deck__dots > li').forEach((li) => li.setAttribute('data-applies', 'true'));
         }
         ensureDeckActive(deck);
       }
 
-      if (state === 'result') {
-        renderResultBanner(profile);
-      }
+      if (state === 'result') renderResultBanner(profile);
     }
 
-    /* Make sure the active deck card is one that's currently visible (applies=true). */
     function ensureDeckActive(deck) {
       const cards = Array.from(deck.querySelectorAll('.deck__card'));
       const visible = cards.filter((c) => (c.getAttribute('data-applies') || 'true') !== 'false');
-      if (visible.length === 0) {
-        deck.setAttribute('data-empty', 'true');
-        return;
-      }
+      if (visible.length === 0) { deck.setAttribute('data-empty', 'true'); return; }
       deck.setAttribute('data-empty', 'false');
       const activeIdx = cards.findIndex((c) => c.classList.contains('is-active'));
       const active = activeIdx >= 0 ? cards[activeIdx] : null;
@@ -141,15 +159,8 @@
       const visible = cards.filter((c) => (c.getAttribute('data-applies') || 'true') !== 'false');
       const activeIdx = cards.findIndex((c) => c.classList.contains('is-active'));
       const visibleActiveIdx = visible.findIndex((c) => c.classList.contains('is-active'));
-      // aria-hidden
-      cards.forEach((c) => {
-        c.setAttribute('aria-hidden', c.classList.contains('is-active') ? 'false' : 'true');
-      });
-      // dots
-      deck.querySelectorAll('.deck__dot').forEach((dot, i) => {
-        dot.classList.toggle('is-active', i === activeIdx);
-      });
-      // prev/next disabled
+      cards.forEach((c) => c.setAttribute('aria-hidden', c.classList.contains('is-active') ? 'false' : 'true'));
+      deck.querySelectorAll('.deck__dot').forEach((dot, i) => dot.classList.toggle('is-active', i === activeIdx));
       const prev = deck.querySelector('.js-deck-prev');
       const next = deck.querySelector('.js-deck-next');
       if (prev) prev.toggleAttribute('disabled', visibleActiveIdx <= 0);
@@ -162,13 +173,12 @@
       const cards = Array.from(deck.querySelectorAll('.deck__card'));
       const visible = cards.filter((c) => (c.getAttribute('data-applies') || 'true') !== 'false');
       if (visible.length === 0) return;
-      const currentVisibleIdx = visible.findIndex((c) => c.classList.contains('is-active'));
-      const nextVisibleIdx = Math.max(0, Math.min(visible.length - 1, currentVisibleIdx + delta));
+      const i = visible.findIndex((c) => c.classList.contains('is-active'));
+      const next = Math.max(0, Math.min(visible.length - 1, i + delta));
       cards.forEach((c) => c.classList.remove('is-active'));
-      visible[nextVisibleIdx].classList.add('is-active');
+      visible[next].classList.add('is-active');
       updateDeckChrome(deck);
     }
-
     function gotoDeck(idx) {
       const deck = document.querySelector('.js-deck');
       if (!deck) return;
@@ -183,47 +193,32 @@
     function renderResultBanner(profile) {
       const result = document.querySelector('.js-result');
       if (!result) return;
+      result.removeAttribute('hidden');
       const total = parseInt(result.getAttribute('data-total') || '3', 10);
       const cards = Array.from(document.querySelectorAll('[data-progress-id]'));
-      const applies = cards.filter((c) => {
-        const id = c.getAttribute('data-progress-id');
-        return appliesTo(id, profile);
-      });
+      const applies = cards.filter((c) => appliesTo(c.getAttribute('data-progress-id'), profile));
       const n = applies.length;
       const titleEl = result.querySelector('.js-result-title');
       const bodyEl = result.querySelector('.js-result-body');
       const showAllBtn = result.querySelector('.js-result-show-all');
       if (!titleEl) return;
-
-      const I18N = {
-        en: {
-          some: (n, t) => `Looks like <strong>${n} of ${t}</strong> likely apply to you.`,
-          all:  (n)    => `Looks like <strong>all ${n}</strong> likely apply to you.`,
-          none: () => `Nothing local for you this year.`,
-          noneBody: () => `Based on your answers, none of the three local taxes apply. (Federal and Oregon state taxes still do!)`,
-          showAll: (t) => `Show me all ${t} anyway`,
-        },
-        es: {
-          some: (n, t) => `Parece que <strong>${n} de ${t}</strong> le aplican.`,
-          all:  (n)    => `Parece que los <strong>${n}</strong> le aplican.`,
-          none: () => `No hay impuestos locales para usted este año.`,
-          noneBody: () => `Según sus respuestas, ninguno de los tres impuestos locales le aplica. (¡Los impuestos federal y estatal de Oregon sí!)`,
-          showAll: (t) => `Mostrar los ${t} de todos modos`,
-        },
-      };
       const lang = (document.documentElement.getAttribute('lang') || 'en').slice(0, 2);
+      const I18N = {
+        en: { some: (n,t)=>`Looks like <strong>${n} of ${t}</strong> likely apply to you.`,
+              all:  (n)=>`Looks like <strong>all ${n}</strong> likely apply to you.`,
+              none: ()=>`Nothing local for you this year.`,
+              noneBody: ()=>`Based on your answers, none of the three local taxes apply. (Federal and Oregon state taxes still do!)`,
+              showAll: (t)=>`Show me all ${t} anyway` },
+        es: { some: (n,t)=>`Parece que <strong>${n} de ${t}</strong> le aplican.`,
+              all:  (n)=>`Parece que los <strong>${n}</strong> le aplican.`,
+              none: ()=>`No hay impuestos locales para usted este año.`,
+              noneBody: ()=>`Según sus respuestas, ninguno de los tres impuestos locales le aplica. (¡Los impuestos federal y estatal de Oregon sí!)`,
+              showAll: (t)=>`Mostrar los ${t} de todos modos` },
+      };
       const dict = I18N[lang] || I18N.en;
-
-      if (n === 0) {
-        titleEl.innerHTML = dict.none();
-        if (bodyEl) { bodyEl.textContent = dict.noneBody(); bodyEl.removeAttribute('hidden'); }
-      } else if (n === total) {
-        titleEl.innerHTML = dict.all(n);
-        if (bodyEl) bodyEl.setAttribute('hidden', '');
-      } else {
-        titleEl.innerHTML = dict.some(n, total);
-        if (bodyEl) bodyEl.setAttribute('hidden', '');
-      }
+      if (n === 0) { titleEl.innerHTML = dict.none(); if (bodyEl) { bodyEl.textContent = dict.noneBody(); bodyEl.removeAttribute('hidden'); } }
+      else if (n === total) { titleEl.innerHTML = dict.all(n); if (bodyEl) bodyEl.setAttribute('hidden', ''); }
+      else { titleEl.innerHTML = dict.some(n, total); if (bodyEl) bodyEl.setAttribute('hidden', ''); }
       if (showAllBtn) showAllBtn.textContent = dict.showAll(total);
     }
 
@@ -234,17 +229,26 @@
         const status = getStatus(taxId);
         let labels = {};
         try { labels = JSON.parse(badge.getAttribute('data-labels') || '{}'); } catch {}
-        badge.className = 'tax-card__status js-card-status' +
-          (status !== 'not-started' ? ' tax-card__status--' + status : '');
+        badge.className = 'tax-card__status js-card-status' + (status !== 'not-started' ? ' tax-card__status--' + status : '');
         const dot = badge.querySelector('.tax-card__status-dot');
         const label = badge.querySelector('.tax-card__status-label');
         if (label) label.textContent = labels[status] || labels['not-started'] || '';
         if (dot) {
-          dot.style.background = status === 'done' ? 'var(--portland)' :
-                                 status === 'in-progress' ? 'var(--metro)' :
-                                 status === 'not-applicable' ? 'var(--ink-faint)' :
-                                 'var(--ink-faint)';
+          dot.style.background = status === 'done' ? 'var(--portland)'
+            : status === 'in-progress' ? 'var(--metro)'
+            : 'var(--ink-faint)';
         }
+      });
+      // Same for deck cards
+      document.querySelectorAll('.deck__card-status.js-card-status').forEach((badge) => {
+        const taxId = badge.getAttribute('data-tax-id');
+        if (!taxId) return;
+        const status = getStatus(taxId);
+        let labels = {};
+        try { labels = JSON.parse(badge.getAttribute('data-labels') || '{}'); } catch {}
+        badge.className = 'deck__card-status js-card-status' + (status !== 'not-started' ? ' deck__card-status--' + status : '');
+        const label = badge.querySelector('.deck__card-status-label');
+        if (label) label.textContent = labels[status] || labels['not-started'] || '';
       });
     }
 
@@ -268,8 +272,7 @@
       const cards = Array.from(document.querySelectorAll('[data-progress-id]'));
       const visible = cards.filter((c) => {
         const id = c.getAttribute('data-progress-id');
-        if (!profile || profile.showAll) return true;
-        return appliesTo(id, profile);
+        return !profile || profile.showAll || appliesTo(id, profile);
       });
       const ids = Array.from(new Set(visible.map((c) => c.getAttribute('data-progress-id')).filter(Boolean)));
       const total = ids.length;
@@ -286,301 +289,181 @@
       if (count) count.textContent = handled + ' / ' + total;
     }
 
-    function renderAll() {
-      applyState();
-      renderCardBadges();
-      renderSegmented();
-      renderProgress();
-      updateAggregate();
-    }
+    /* ── Card-level estimate slot + aggregate ─────────── */
 
-    /* ── Bind events ────────────────────────────────────── */
+    function renderEstimates() {
+      const profile = readProfile();
+      const calc = readCalc();
+      const filing = calc.filing || 'single';
+      const income = (calc.income == null) ? null : Number(calc.income);
+      const lang = (document.documentElement.getAttribute('lang') || 'en').slice(0, 2);
 
-    function setMain(state) {
-      const main = document.querySelector('[data-page="home"]');
-      if (main) main.setAttribute('data-state', state);
-    }
+      const I18N = {
+        en: { empty: 'Enter your income above to see an estimate',
+              below: 'Below the threshold — you don\'t owe this',
+              na: 'You marked this as not applicable',
+              naProfile: 'Doesn\'t apply based on your answers' },
+        es: { empty: 'Ingrese su ingreso arriba para ver un estimado',
+              below: 'Por debajo del umbral — no debe esto',
+              na: 'Lo marcó como no aplicable',
+              naProfile: 'No aplica según sus respuestas' },
+      };
+      const dict = I18N[lang] || I18N.en;
 
-    function bind() {
-      // Status control (4-segment) — used in deck cards + detail pages
-      document.querySelectorAll('.js-status-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const root = btn.closest('.status-control');
-          const taxId = root && root.getAttribute('data-tax-id');
-          const status = btn.getAttribute('data-status');
-          if (!taxId || !status) return;
-          setStatus(taxId, status);
-          renderAll();
-        });
-      });
+      // Per-tax results
+      const results = {};
+      TAX_IDS.forEach((id) => {
+        let r;
+        if (id === 'arts-tax')          r = computeArts(profile);
+        else if (id === 'multnomah-pfa') r = (income == null) ? { applies: null, amount: 0, state: 'empty' } : computePFA(filing, income);
+        else if (id === 'metro-shs')     r = (income == null) ? { applies: null, amount: 0, state: 'empty' } : computeSHS(filing, income);
+        // Override: user marked NA
+        const status = getStatus(id);
+        if (status === 'not-applicable') r = { applies: false, amount: 0, state: 'na', userNa: true };
+        // Override: profile excludes
+        if (profile && !profile.showAll && !appliesTo(id, profile)) {
+          r = { applies: false, amount: 0, state: 'na', profileNa: true };
+        }
+        results[id] = r;
 
-      // Deck navigation
-      const prev = document.querySelector('.js-deck-prev');
-      if (prev) prev.addEventListener('click', () => navDeck(-1));
-      const next = document.querySelector('.js-deck-next');
-      if (next) next.addEventListener('click', () => navDeck(1));
-      document.querySelectorAll('.deck__dot').forEach((dot) => {
-        dot.addEventListener('click', () => {
-          const idx = parseInt(dot.getAttribute('data-deck-go') || '0', 10);
-          gotoDeck(idx);
-        });
-      });
-      // Keyboard arrows
-      const deck = document.querySelector('.js-deck');
-      if (deck) {
-        document.addEventListener('keydown', (e) => {
-          if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-          if (e.key === 'ArrowLeft') navDeck(-1);
-          if (e.key === 'ArrowRight') navDeck(1);
-        });
-      }
+        // Render the card slot
+        const slot = document.querySelector(`.js-card-est[data-tax-id="${id}"]`);
+        if (!slot) return;
+        const amountEl = slot.querySelector('.js-card-est-amount');
+        const hintEl = slot.querySelector('.js-card-est-hint');
 
-      // Welcome card
-      const startBtn = document.querySelector('.js-welcome-start');
-      if (startBtn) startBtn.addEventListener('click', () => setMain('survey'));
-      const skipBtn = document.querySelector('.js-welcome-skip');
-      if (skipBtn) skipBtn.addEventListener('click', () => {
-        writeProfile({ showAll: true });
-        renderAll();
-        scrollToList();
-      });
-
-      // Survey form
-      const form = document.querySelector('.js-survey-form');
-      if (form) {
-        form.addEventListener('submit', (e) => {
-          e.preventDefault();
-          const fd = new FormData(form);
-          const profile = {
-            residency: String(fd.get('residency') || 'unsure'),
-            filing:    String(fd.get('filing') || 'unsure'),
-            income:    String(fd.get('income') || 'unsure'),
-          };
-          writeProfile(profile);
-          renderAll();
-          scrollToList();
-        });
-        const surveyBack = form.querySelector('.js-survey-skip');
-        if (surveyBack) surveyBack.addEventListener('click', () => {
-          writeProfile({ showAll: true });
-          renderAll();
-          scrollToList();
-        });
-      }
-
-      // Result banner buttons
-      const showAllBtn = document.querySelector('.js-result-show-all');
-      if (showAllBtn) showAllBtn.addEventListener('click', () => {
-        writeProfile({ showAll: true });
-        renderAll();
-      });
-      const editBtn = document.querySelector('.js-result-edit');
-      if (editBtn) editBtn.addEventListener('click', () => {
-        remove(KEY_PROFILE);
-        setMain('survey');
-        prefillSurvey();
-      });
-      const skippedEdit = document.querySelector('.js-skipped-edit');
-      if (skippedEdit) skippedEdit.addEventListener('click', () => {
-        remove(KEY_PROFILE);
-        setMain('survey');
-      });
-
-      // Clear all progress
-      const clearBtn = document.querySelector('.js-clear-checklist');
-      if (clearBtn) clearBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        remove(KEY_CHECKLIST);
-        renderAll();
-        const note = document.querySelector('.js-cleared-note');
-        if (note) {
-          note.removeAttribute('hidden');
-          setTimeout(() => note.setAttribute('hidden', ''), 2500);
+        if (r.state === 'computed') {
+          slot.setAttribute('data-state', 'computed');
+          if (amountEl) amountEl.textContent = fmtUSD(Math.ceil(r.amount));
+          if (hintEl) hintEl.textContent = '';
+        } else if (r.state === 'below') {
+          slot.setAttribute('data-state', 'below');
+          if (amountEl) amountEl.textContent = '$0';
+          if (hintEl) hintEl.textContent = dict.below;
+        } else if (r.state === 'na') {
+          slot.setAttribute('data-state', 'na');
+          if (amountEl) amountEl.textContent = '—';
+          if (hintEl) hintEl.textContent = r.userNa ? dict.na : dict.naProfile;
+        } else {
+          slot.setAttribute('data-state', 'empty');
+          if (amountEl) amountEl.textContent = '—';
+          if (hintEl) hintEl.textContent = dict.empty;
         }
       });
 
-      bindEstimators();
-      bindCalendar();
+      renderAggregate(results, profile);
     }
 
-    /* ── Estimators ──────────────────────────────────────── */
-
-    const estimates = {}; // taxId -> amount (number) | null
-    const estReasons = {}; // taxId -> string
-
-    function fmtUSD(n) {
-      try {
-        return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-      } catch { return '$' + Math.round(n).toLocaleString(); }
-    }
-
-    function computeArts(qualifies) {
-      return qualifies ? { applies: true, amount: 35 } : { applies: false, amount: 0, reason: 'Doesn\'t qualify.' };
-    }
-    function computePFA(filing, income) {
-      const isJoint = filing === 'joint';
-      const t1 = isJoint ? 200000 : 125000;
-      const t2 = isJoint ? 400000 : 250000;
-      const inc = Math.max(0, income || 0);
-      if (inc <= t1) return { applies: false, amount: 0, reason: `Below the ${isJoint ? '$200k joint' : '$125k single'} threshold.` };
-      const band1 = Math.min(inc, t2) - t1;
-      const band2 = Math.max(0, inc - t2);
-      return { applies: true, amount: band1 * 0.015 + band2 * 0.030 };
-    }
-    function computeSHS(filing, income) {
-      const isJoint = filing === 'joint';
-      const threshold = isJoint ? 205000 : 128000;
-      const taxable = Math.max(0, (income || 0) - threshold);
-      if (taxable === 0) return { applies: false, amount: 0, reason: `Below the ${isJoint ? '$205k joint' : '$128k single'} threshold.` };
-      return { applies: true, amount: taxable * 0.01 };
-    }
-
-    function bindEstimators() {
-      document.querySelectorAll('.js-estimator').forEach((est) => {
-        const taxId = est.getAttribute('data-tax-id');
-        const type = est.getAttribute('data-calc-type');
-        if (!taxId || !type) return;
-
-        // Prefill filing from profile if available
-        const profile = readProfile();
-        if (profile && profile.filing && (type === 'pfa' || type === 'shs')) {
-          const radio = est.querySelector(`input[name="${taxId}-filing"][value="${profile.filing === 'joint' ? 'joint' : 'single'}"]`);
-          if (radio) radio.checked = true;
-        }
-
-        const recompute = () => {
-          let result = { applies: false, amount: 0 };
-          if (type === 'arts') {
-            const q = est.querySelector('.js-arts-qual');
-            result = computeArts(!!(q && q.checked));
-          } else {
-            const filingEl = est.querySelector(`input[name="${taxId}-filing"]:checked`);
-            const filing = filingEl ? filingEl.value : 'single';
-            const incomeEl = est.querySelector('.js-income-input');
-            const income = parseFloat(incomeEl ? incomeEl.value : '0') || 0;
-            if (type === 'pfa') result = computePFA(filing, income);
-            else if (type === 'shs') result = computeSHS(filing, income);
-          }
-          showEstimate(est, taxId, result);
-          updateAggregate();
-        };
-
-        est.querySelectorAll('input').forEach((inp) => {
-          inp.addEventListener('input', recompute);
-          inp.addEventListener('change', recompute);
-        });
-
-        // Auto-compute on open if defaults are present (e.g. arts checkbox)
-        est.addEventListener('toggle', () => {
-          if (est.open) recompute();
-        });
-      });
-    }
-
-    function showEstimate(est, taxId, result) {
-      const resBox = est.querySelector('.js-estimator-result');
-      const amountEl = est.querySelector('.js-estimator-result-amount');
-      const reasonEl = est.querySelector('.js-estimator-reason');
-      const summaryAmt = est.querySelector('.js-estimator-amount');
-
-      const hasInput = result.applies || (result.reason && result.reason.length > 0);
-      if (!hasInput) {
-        if (resBox) resBox.setAttribute('hidden', '');
-        if (summaryAmt) summaryAmt.setAttribute('hidden', '');
-        estimates[taxId] = null;
-        return;
-      }
-
-      if (resBox) resBox.removeAttribute('hidden');
-      if (amountEl) amountEl.textContent = fmtUSD(Math.ceil(result.amount));
-      if (reasonEl) {
-        if (result.reason) { reasonEl.textContent = result.reason; reasonEl.removeAttribute('hidden'); }
-        else { reasonEl.textContent = ''; reasonEl.setAttribute('hidden', ''); }
-      }
-      if (summaryAmt) {
-        summaryAmt.textContent = result.applies ? fmtUSD(Math.ceil(result.amount)) : '$0';
-        summaryAmt.removeAttribute('hidden');
-      }
-
-      estimates[taxId] = result.applies ? result.amount : 0;
-      estReasons[taxId] = result.reason || '';
-    }
-
-    function updateAggregate() {
+    function renderAggregate(results, profile) {
       const banner = document.querySelector('.js-aggregate');
       if (!banner) return;
-      // Sum estimates for taxes that are visible (apply by profile) and computed.
-      const profile = readProfile();
-      const cards = Array.from(document.querySelectorAll('.deck__card'));
-      let total = 0;
-      let any = false;
-      cards.forEach((card) => {
-        const id = card.getAttribute('data-progress-id');
-        if (!id) return;
-        const visible = !profile || profile.showAll || appliesTo(id, profile);
-        if (!visible) return;
-        if (estimates[id] != null) {
-          total += estimates[id];
-          any = true;
-        }
-      });
       const amountEl = banner.querySelector('.js-aggregate-amount');
-      if (any) {
-        if (amountEl) amountEl.textContent = fmtUSD(Math.ceil(total));
-        banner.removeAttribute('hidden');
+      const chipsEl = banner.querySelector('.js-aggregate-chips');
+      const emptyEl = banner.querySelector('.js-aggregate-empty');
+      if (!amountEl || !chipsEl) return;
+
+      // Filter to taxes applicable per profile
+      const applicableIds = TAX_IDS.filter((id) => !profile || profile.showAll || appliesTo(id, profile));
+
+      let total = 0;
+      let anyComputed = false;
+      const lang = (document.documentElement.getAttribute('lang') || 'en').slice(0, 2);
+      const NAMES = {
+        en: { 'arts-tax': 'Arts Tax', 'multnomah-pfa': 'Multnomah PFA', 'metro-shs': 'Metro SHS' },
+        es: { 'arts-tax': 'Imp. Artes', 'multnomah-pfa': 'PFA Multnomah', 'metro-shs': 'Metro SHS' },
+      };
+      const STATE_LABELS = {
+        en: { computed: '', below: '$0', 'not-yet': '—', na: 'skipped' },
+        es: { computed: '', below: '$0', 'not-yet': '—', na: 'omitido' },
+      };
+      const namesDict = NAMES[lang] || NAMES.en;
+      const stateDict = STATE_LABELS[lang] || STATE_LABELS.en;
+
+      chipsEl.innerHTML = '';
+      applicableIds.forEach((id) => {
+        const r = results[id];
+        let state;
+        let trailing = '';
+        if (r.state === 'na') { state = 'na'; }
+        else if (r.state === 'computed') { state = 'computed'; total += r.amount; anyComputed = true; trailing = fmtUSD(Math.ceil(r.amount)); }
+        else if (r.state === 'below') { state = 'below'; trailing = '$0'; }
+        else { state = 'not-yet'; trailing = stateDict['not-yet']; }
+        const chip = document.createElement('span');
+        chip.className = 'agg-chip';
+        chip.setAttribute('data-state', state);
+        chip.innerHTML = `<span class="agg-chip__dot" aria-hidden="true"></span>${namesDict[id]} <span class="agg-chip__amount">${trailing}</span>`;
+        chipsEl.appendChild(chip);
+      });
+
+      if (anyComputed) {
+        amountEl.textContent = fmtUSD(Math.ceil(total));
+        if (emptyEl) emptyEl.style.display = 'none';
       } else {
-        banner.setAttribute('hidden', '');
+        amountEl.textContent = '—';
+        if (emptyEl) emptyEl.style.display = '';
       }
     }
 
-    /* ── Calendar (.ics) ─────────────────────────────────── */
+    /* ── CalcPanel: read inputs, persist, render ──────── */
 
+    function syncCalcPanel() {
+      const calc = readCalc();
+      const filingEls = document.querySelectorAll('.js-calc-filing');
+      filingEls.forEach((el) => {
+        if (el.value === (calc.filing || 'single')) el.checked = true;
+      });
+      const incomeEl = document.querySelector('.js-calc-income');
+      if (incomeEl && calc.income != null) incomeEl.value = String(calc.income);
+    }
+
+    function readCalcFromUI() {
+      const filingEl = document.querySelector('.js-calc-filing:checked');
+      const incomeEl = document.querySelector('.js-calc-income');
+      const filing = filingEl ? filingEl.value : 'single';
+      const incomeStr = incomeEl ? incomeEl.value : '';
+      const income = incomeStr === '' ? null : (parseFloat(incomeStr) || 0);
+      return { filing, income };
+    }
+
+    function onCalcChange() {
+      writeCalc(readCalcFromUI());
+      renderEstimates();
+    }
+
+    function clearCalcIncome() {
+      const incomeEl = document.querySelector('.js-calc-income');
+      if (incomeEl) incomeEl.value = '';
+      onCalcChange();
+    }
+
+    /* ── Calendar (.ics) ─────────────────────────────── */
     function pad(n) { return n < 10 ? '0' + n : '' + n; }
     function nowStamp() {
       const d = new Date();
       return d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
     }
     function parseDeadline(text) {
-      // Accepts "April 15, 2026" or "15 de abril de 2026" → ISO YYYY-MM-DD
       const en = /^(\w+) (\d{1,2}),\s*(\d{4})$/;
       const months = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
       const m = text.match(en);
-      if (m) {
-        const mo = months[m[1].toLowerCase()];
-        if (mo) return `${m[3]}-${pad(mo)}-${pad(parseInt(m[2],10))}`;
-      }
-      // Spanish: "15 de abril de 2026"
+      if (m) { const mo = months[m[1].toLowerCase()]; if (mo) return `${m[3]}-${pad(mo)}-${pad(parseInt(m[2],10))}`; }
       const esRe = /^(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})$/i;
       const monthsEs = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
       const me = text.match(esRe);
-      if (me) {
-        const mo = monthsEs[me[2].toLowerCase()];
-        if (mo) return `${me[3]}-${pad(mo)}-${pad(parseInt(me[1],10))}`;
-      }
+      if (me) { const mo = monthsEs[me[2].toLowerCase()]; if (mo) return `${me[3]}-${pad(mo)}-${pad(parseInt(me[1],10))}`; }
       return null;
     }
-    function escIcs(s) {
-      return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
-    }
+    function escIcs(s) { return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
     function buildICS(events) {
       const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//pdx-taxes//community resource//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
       events.forEach((ev) => {
         const dt = ev.date.replace(/-/g,'');
         const end = new Date(ev.date + 'T00:00:00Z'); end.setUTCDate(end.getUTCDate()+1);
         const endStr = end.getUTCFullYear() + pad(end.getUTCMonth()+1) + pad(end.getUTCDate());
-        lines.push(
-          'BEGIN:VEVENT',
-          `UID:${ev.uid}@pdx-taxes.bjamba.github.io`,
-          `DTSTAMP:${nowStamp()}`,
-          `DTSTART;VALUE=DATE:${dt}`,
-          `DTEND;VALUE=DATE:${endStr}`,
-          `SUMMARY:${escIcs(ev.title)}`,
-        );
+        lines.push('BEGIN:VEVENT', `UID:${ev.uid}@pdx-taxes.bjamba.github.io`, `DTSTAMP:${nowStamp()}`, `DTSTART;VALUE=DATE:${dt}`, `DTEND;VALUE=DATE:${endStr}`, `SUMMARY:${escIcs(ev.title)}`);
         if (ev.description) lines.push(`DESCRIPTION:${escIcs(ev.description)}`);
         if (ev.url) lines.push(`URL:${ev.url}`);
-        (ev.remindersDays || []).forEach((d) => {
-          lines.push('BEGIN:VALARM', `TRIGGER:-P${d}D`, 'ACTION:DISPLAY', `DESCRIPTION:${escIcs(ev.title)}`, 'END:VALARM');
-        });
+        (ev.remindersDays || []).forEach((d) => lines.push('BEGIN:VALARM', `TRIGGER:-P${d}D`, 'ACTION:DISPLAY', `DESCRIPTION:${escIcs(ev.title)}`, 'END:VALARM'));
         lines.push('END:VEVENT');
       });
       lines.push('END:VCALENDAR');
@@ -595,38 +478,140 @@
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
-
     function flashCalendarFeedback(btn) {
       const original = btn.innerHTML;
-      btn.innerHTML = '✓ ' + (btn.getAttribute('data-done-label') || 'Downloaded');
+      btn.innerHTML = '✓ Downloaded';
       setTimeout(() => { btn.innerHTML = original; }, 1800);
     }
 
-    function bindCalendar() {
-      // Per-card single deadline
+    /* ── Top-level render ──────────────────────────── */
+
+    function renderAll() {
+      applyState();
+      renderCardBadges();
+      renderSegmented();
+      renderProgress();
+      renderEstimates();
+    }
+
+    function setMain(state) {
+      const main = document.querySelector('[data-page="home"]');
+      if (main) main.setAttribute('data-state', state);
+    }
+
+    function scrollToTopOfDeck() {
+      const target = document.querySelector('.js-result, .js-deck, .js-calc-panel');
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    /* ── Bind ──────────────────────────────────────── */
+
+    function bind() {
+      // Status segments
+      document.querySelectorAll('.js-status-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const root = btn.closest('.status-control');
+          const taxId = root && root.getAttribute('data-tax-id');
+          const status = btn.getAttribute('data-status');
+          if (!taxId || !status) return;
+          setStatus(taxId, status);
+          renderAll();
+        });
+      });
+
+      // Deck nav
+      const prev = document.querySelector('.js-deck-prev');
+      if (prev) prev.addEventListener('click', () => navDeck(-1));
+      const next = document.querySelector('.js-deck-next');
+      if (next) next.addEventListener('click', () => navDeck(1));
+      document.querySelectorAll('.deck__dot').forEach((dot) => {
+        dot.addEventListener('click', () => gotoDeck(parseInt(dot.getAttribute('data-deck-go') || '0', 10)));
+      });
+      const deck = document.querySelector('.js-deck');
+      if (deck) {
+        document.addEventListener('keydown', (e) => {
+          if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+          if (e.key === 'ArrowLeft') navDeck(-1);
+          if (e.key === 'ArrowRight') navDeck(1);
+        });
+      }
+
+      // Welcome
+      const startBtn = document.querySelector('.js-welcome-start');
+      if (startBtn) startBtn.addEventListener('click', () => setMain('survey'));
+      const skipBtn = document.querySelector('.js-welcome-skip');
+      if (skipBtn) skipBtn.addEventListener('click', () => { writeProfile({ showAll: true }); renderAll(); scrollToTopOfDeck(); });
+
+      // Survey
+      const form = document.querySelector('.js-survey-form');
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const fd = new FormData(form);
+          writeProfile({
+            residency: String(fd.get('residency') || 'unsure'),
+            filing:    String(fd.get('filing') || 'unsure'),
+            income:    String(fd.get('income') || 'unsure'),
+          });
+          // Carry filing into calc state if user picked single/joint
+          const filing = String(fd.get('filing') || 'unsure');
+          if (filing === 'single' || filing === 'joint') {
+            const cur = readCalc();
+            writeCalc({ filing, income: cur.income });
+          }
+          renderAll();
+          syncCalcPanel();
+          scrollToTopOfDeck();
+        });
+        const back = form.querySelector('.js-survey-skip');
+        if (back) back.addEventListener('click', () => { writeProfile({ showAll: true }); renderAll(); scrollToTopOfDeck(); });
+      }
+
+      // Result banner
+      const showAllBtn = document.querySelector('.js-result-show-all');
+      if (showAllBtn) showAllBtn.addEventListener('click', () => { writeProfile({ showAll: true }); renderAll(); });
+      const editBtn = document.querySelector('.js-result-edit');
+      if (editBtn) editBtn.addEventListener('click', () => { remove(KEY_PROFILE); setMain('survey'); });
+      const skippedEdit = document.querySelector('.js-skipped-edit');
+      if (skippedEdit) skippedEdit.addEventListener('click', () => { remove(KEY_PROFILE); setMain('survey'); });
+
+      // Clear progress
+      const clearBtn = document.querySelector('.js-clear-checklist');
+      if (clearBtn) clearBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        remove(KEY_CHECKLIST);
+        renderAll();
+        const note = document.querySelector('.js-cleared-note');
+        if (note) { note.removeAttribute('hidden'); setTimeout(() => note.setAttribute('hidden', ''), 2500); }
+      });
+
+      // CalcPanel
+      document.querySelectorAll('.js-calc-filing').forEach((r) => {
+        r.addEventListener('change', onCalcChange);
+      });
+      const incomeEl = document.querySelector('.js-calc-income');
+      if (incomeEl) {
+        incomeEl.addEventListener('input', onCalcChange);
+        incomeEl.addEventListener('change', onCalcChange);
+      }
+      const clearIncomeBtn = document.querySelector('.js-calc-clear');
+      if (clearIncomeBtn) clearIncomeBtn.addEventListener('click', clearCalcIncome);
+
+      // Calendar — single
       document.querySelectorAll('.js-calendar-add').forEach((btn) => {
         btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
+          e.preventDefault(); e.stopPropagation();
           const id = btn.getAttribute('data-tax-id');
           const name = btn.getAttribute('data-tax-name');
           const deadline = btn.getAttribute('data-tax-deadline');
           const url = btn.getAttribute('data-tax-url');
           const iso = parseDeadline(deadline || '');
           if (!iso) return;
-          downloadICS(`${id}-deadline.ics`, [{
-            uid: `${id}-${iso}`,
-            date: iso,
-            title: `${name} — file by today`,
-            description: 'Filing deadline. Heads up from pdx-taxes.',
-            url,
-            remindersDays: [14, 1],
-          }]);
+          downloadICS(`${id}-deadline.ics`, [{ uid: `${id}-${iso}`, date: iso, title: `${name} — file by today`, description: 'Filing deadline. Heads up from pdx-taxes.', url, remindersDays: [14, 1] }]);
           flashCalendarFeedback(btn);
         });
       });
-
-      // Aggregate: all visible deadlines
+      // Calendar — all
       document.querySelectorAll('.js-calendar-add-all').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -642,50 +627,42 @@
             const deadline = dlEl ? dlEl.textContent.trim() : '';
             const iso = parseDeadline(deadline);
             if (!iso || !name) return;
-            events.push({
-              uid: `${id}-${iso}`,
-              date: iso,
-              title: `${name.textContent.trim()} — file by today`,
-              description: 'Filing deadline. Heads up from pdx-taxes.',
-              remindersDays: [14, 1],
-            });
+            events.push({ uid: `${id}-${iso}`, date: iso, title: `${name.textContent.trim()} — file by today`, description: 'Filing deadline. Heads up from pdx-taxes.', remindersDays: [14, 1] });
           });
           if (events.length === 0) return;
           downloadICS('pdx-taxes-deadlines.ics', events);
           flashCalendarFeedback(btn);
         });
       });
-
-      // Deadlines page bulk button
+      // Deadlines page rows
       document.querySelectorAll('.js-calendar-add-deadline').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
           const date = btn.getAttribute('data-date');
           const title = btn.getAttribute('data-title') || 'Deadline';
           if (!date) return;
-          downloadICS(`${title.toLowerCase().replace(/\s+/g, '-')}.ics`, [{
-            uid: `${title}-${date}`,
-            date, title,
-            description: btn.getAttribute('data-desc') || '',
-            remindersDays: [14, 1],
-          }]);
+          downloadICS(`${title.toLowerCase().replace(/\s+/g, '-')}.ics`, [{ uid: `${title}-${date}`, date, title, description: btn.getAttribute('data-desc') || '', remindersDays: [14, 1] }]);
           flashCalendarFeedback(btn);
         });
       });
     }
 
-    function prefillSurvey() {
-      // No-op: profile was cleared, fields start fresh.
-    }
-
-    function scrollToList() {
-      const list = document.querySelector('.js-tax-list, .js-result');
-      if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
     function init() {
-      renderAll();
-      bind();
+      try {
+        syncCalcPanel();
+        renderAll();
+        bind();
+      } catch (err) {
+        // Defensive: if anything throws, at least reveal the page so the user
+        // isn't staring at a blank screen.
+        const main = document.querySelector('[data-page="home"]');
+        if (main && main.getAttribute('data-state') === 'loading') {
+          const profile = readProfile();
+          main.setAttribute('data-state', profile ? 'skipped' : 'welcome');
+        }
+        // Re-throw so the error shows in console for debugging.
+        throw err;
+      }
     }
 
     if (document.readyState === 'loading') {

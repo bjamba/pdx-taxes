@@ -18,7 +18,7 @@ rate:
   type: flat
   amount_usd: 35
 
-rate_summary: A flat $35 per person, per year.
+rate_summary: A flat $35 per person, per year
 
 deadline: "April 15, 2026"
 
