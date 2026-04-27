@@ -2,7 +2,9 @@
 
 Initial research into the local taxes in scope. **This is a working document** to inform design — not authoritative content for the site itself. All tax content for the site must be verified against official jurisdiction sources before publishing, and must include `last_verified` dates.
 
-_Last researched: 2026-04-26_
+_Last researched: 2026-04-26 (TY 2025)._
+
+> ⚠️ **Refresh required for TY 2026 before next filing season.** Bracket thresholds, deadlines, and filing URLs all need re-verification. See `BACKLOG.md` → "Annual review".
 
 ---
 

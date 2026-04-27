@@ -99,14 +99,12 @@ export const ui = {
     'calc.trigger_title': 'Tax Status',
     'calc.trigger_lead': 'Filing status and income — see which taxes apply and what you might owe.',
     'calc.modal_title': 'Your tax status',
-    'calc.privacy': 'Stays in this browser. We never see this.',
     'calc.close': 'Close',
     'calc.save': 'Save',
     'card_est.empty': 'Add your income above to see an estimate',
     'card_est.below': 'Below the threshold — you don\'t owe this',
     'card_est.label': 'Your estimate',
     'card_est.na': 'You marked this as not applicable',
-    'card_est.exempt': 'You\'re exempt from this tax',
 
     /* Aggregate */
     'aggregate.title': 'Estimated total',
@@ -126,7 +124,7 @@ export const ui = {
     'deadlines.section_forms': 'Forms you may receive',
     'deadlines.section_filing': 'Filing deadlines',
     'deadlines.nav_label': 'Deadlines',
-    'deadlines.card_title': 'Tax Deadlines',
+    'deadlines.card_title': 'Tax Calendar',
     'deadlines.card_lead': 'Download .ics reminders for filing dates and the forms you\'ll receive.',
   },
   es: {
@@ -212,14 +210,12 @@ export const ui = {
     'calc.trigger_title': 'Estado Fiscal',
     'calc.trigger_lead': 'Estado civil y ingresos — vea qué impuestos aplican y cuánto podría deber.',
     'calc.modal_title': 'Su estado fiscal',
-    'calc.privacy': 'Se queda en este navegador. Nunca lo vemos.',
     'calc.close': 'Cerrar',
     'calc.save': 'Guardar',
     'card_est.empty': 'Añada su ingreso arriba para ver un estimado',
     'card_est.below': 'Por debajo del umbral — no debe esto',
     'card_est.label': 'Su estimado',
     'card_est.na': 'Lo marcó como no aplicable',
-    'card_est.exempt': 'Está exento de este impuesto',
 
     'aggregate.title': 'Total estimado',
     'aggregate.subtitle': 'entre los impuestos que le aplican',
@@ -236,7 +232,7 @@ export const ui = {
     'deadlines.section_forms': 'Formularios que puede recibir',
     'deadlines.section_filing': 'Fechas de presentación',
     'deadlines.nav_label': 'Fechas límite',
-    'deadlines.card_title': 'Fechas de Impuestos',
+    'deadlines.card_title': 'Calendario Fiscal',
     'deadlines.card_lead': 'Descargue recordatorios .ics para fechas de presentación y formularios que recibirá.',
   },
 } as const;

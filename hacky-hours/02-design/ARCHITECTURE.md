@@ -39,7 +39,7 @@ The user's browser is the only place anything stateful happens — checklist pro
 
 ## Static site generator
 
-**Locked: Astro 5.x** with **Preact** for interactive calculator islands. Full reasoning in [ADR 2026-04-26 — Static site generator](decisions/2026-04-26-static-site-generator.md).
+**Locked: Astro 5.x** with vanilla JavaScript (`is:inline` IIFE in `src/components/ChecklistScript.astro`) for the interactive checklist + calculator. Preact is allowed by the ADR but **not adopted** — the current interaction surface is small enough that a single inline script is the cheapest correct option. Revisit when calculator UX needs grow. Full reasoning in [ADR 2026-04-26 — Static site generator](decisions/2026-04-26-static-site-generator.md).
 
 In short: Content Collections + Zod give us schema-validated tax data with build-fail-on-bad-content, i18n routing is first-class, and "islands" lets us ship zero JS on the 95% of pages that don't need it while still having a real framework for the 5% that do.
 
@@ -127,7 +127,7 @@ Tax content goes stale every year. The maintenance plan:
 
 ## Locked decisions (ADRs)
 
-- **Static site generator** — Astro 5.x + Preact islands. See `decisions/2026-04-26-static-site-generator.md`.
+- **Static site generator** — Astro 5.x. Preact sanctioned for islands but not currently used; checklist + calculator are vanilla JS in a single `is:inline` IIFE. See `decisions/2026-04-26-static-site-generator.md`.
 - **Schema and validation** — Astro Content Collections + Zod. See `decisions/2026-04-26-schema-validation.md`.
 - **Color palette** — WCAG AA tested, hex values locked. See `decisions/2026-04-26-color-palette-wcag-aa.md`.
 

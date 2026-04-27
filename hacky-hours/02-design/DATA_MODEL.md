@@ -164,17 +164,26 @@ Stored in `localStorage` only. Never transmitted.
   "pdx-taxes:lang:v1": "es"
 }
 
-// Calculator inputs (per tax — kept ONLY if user toggles "remember")
+// Unified profile (survey + calculator inputs merged in v0.3)
+// Shipped shape (v0.5+):
 {
-  "pdx-taxes:calc:metro-shs:v1": { ... }
+  "pdx-taxes:profile:v2": {
+    "filing": "single" | "joint",
+    "income": <number | null>,    // null = not provided
+    "showAll": <boolean>          // toggled by view-toggle
+  }
 }
 ```
 
+**Migration history:**
+- `pdx-taxes:calc:<tax-id>:v1` — separate per-calculator keys originally planned (this section). Never shipped; consolidated into `pdx-taxes:profile:v2` before launch.
+- `pdx-taxes:profile:v1` (income buckets, residency field, artsExempt boolean) — superseded by v2. Old v1 keys are silently ignored on read; users see the welcome card again. Acceptable tradeoff for a zero-data-collection site.
+
 State design rules:
-- **Versioned keys** (`:v1`) so we can migrate without losing data.
+- **Versioned keys** (`:v1`, `:v2`) so we can migrate without losing data.
 - **Schema-validate on read** — corrupt or wrong-shape data is dropped, not crashed on.
 - **Always show a "Clear my saved data" button** in the UI (privacy hygiene).
-- **No PII fields** — no name, no SSN, no income figures persisted unless the user explicitly opts into "remember my calculator inputs" (off by default).
+- **No PII fields** — no name, no SSN, no household identifiers. Income is a number the user types; it never leaves the device.
 
 ## Sample applicability logic flow
 

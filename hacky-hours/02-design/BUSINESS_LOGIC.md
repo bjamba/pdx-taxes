@@ -12,7 +12,7 @@ This is non-removable from any output. It's part of the component.
 
 ## Applicability rules
 
-The "starter checklist" comes from running each tax record's `applies_to` block against the user's transient answers (residency, age, income range, business gross receipts, etc.).
+The "starter checklist" comes from running per-tax applicability rules against the user's transient survey answers. As of v0.5, the survey is two questions — filing status (single/joint) and taxable income — and Portland residency is **assumed** because the site is named "PDX taxes". Applicability for the three personal taxes is hardcoded in `src/components/ChecklistScript.astro`'s `appliesTo()` function (not in YAML), and the canonical math lives in `src/lib/calculators.ts`. The Arts Tax exemption is **derived** from `income < $1,000` rather than a separate user-facing checkbox.
 
 ### Logic
 

@@ -21,6 +21,8 @@ A broken `filing_url` is a higher-severity bug than a typo in this codebase.
 
 Test framework: Vitest (small, fast, Node-friendly). Or whatever Astro recommends at build time.
 
+> **Current status (as of v0.5):** Of the tooling prescribed below, only **schema validation** (Astro Content Collections + Zod in `src/content.config.ts`) is integrated. Vitest, Playwright, axe-core, and lychee are V1 backlog items — see `../04-build/BACKLOG.md` § Calculator math correctness. Until those land, manual smoke testing on the home page and one tax detail page covers the deploy gate.
+
 ### 3. Accessibility
 
 See `ACCESSIBILITY.md` for the full list. Summary of CI:

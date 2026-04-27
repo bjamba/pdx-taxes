@@ -13,8 +13,8 @@ flowchart TD
     Start([Lands on home page]) --> Choose{Individual or Business?}
     Choose -- Individual --> IndChecklist[Sees personalized starter checklist]
     Choose -- Business --> BizChecklist[Sees business starter checklist]
-    IndChecklist --> Refine[Optional: refine with 3 yes/no questions<br/>residency, income range, etc.]
-    BizChecklist --> Refine2[Optional: refine with 3 yes/no questions<br/>gross receipts, location, activity]
+    IndChecklist --> Refine[Refine with 2 questions<br/>filing status, taxable income<br/>Portland residency assumed]
+    BizChecklist --> Refine2[Optional: refine with yes/no questions<br/>gross receipts, location, activity<br/>(business view not yet shipped)]
     Refine --> List[Final list of taxes that likely apply]
     Refine2 --> List
     List --> Tap[Taps a tax to learn more]

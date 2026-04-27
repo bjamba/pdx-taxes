@@ -18,17 +18,14 @@ const { lang } = Astro.props;
   </span>
 </button>
 
-<div class="calc-modal js-calc-modal" role="dialog" aria-modal="true" aria-labelledby="calc-modal-title" hidden>
+<div class="calc-modal js-calc-modal" role="dialog" aria-modal="true" aria-label={t(lang, 'calc.modal_title')} hidden>
   <div class="calc-modal__overlay js-calc-close-overlay"></div>
 
   <div class="calc-modal__panel" role="document">
-    <div class="calc-modal__head">
-      <h2 id="calc-modal-title" class="calc-modal__title">{t(lang, 'calc.modal_title')}</h2>
-      <button type="button" class="calc-modal__close js-calc-close" aria-label={t(lang, 'calc.close')}>×</button>
-    </div>
+    <button type="button" class="calc-modal__close js-calc-close" aria-label={t(lang, 'calc.close')}>×</button>
 
-    <!-- Same survey component as in-page; rendered with a `survey--in-modal` wrapper
-         so we can hide the secondary skip button and close the modal on submit. -->
+    <!-- Reuses the in-page Survey component verbatim so the modal looks identical
+         to the first-time quiz; survey--in-modal only tweaks button behavior. -->
     <div class="survey--in-modal">
       <Survey lang={lang} />
     </div>
