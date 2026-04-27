@@ -1975,7 +1975,10 @@ ul { list-style: none; }
    modal looks identical to the first-time quiz. The X close button is
    absolute-positioned over the card. The skip button is hidden because
    the X / overlay click already serves as cancel. */
-.survey--in-modal .survey { margin: 0; }
+/* The modal's survey lives inside [data-page=home], so the state-machine
+   rules that hide .js-survey outside state=survey would hide it here too.
+   Force it visible — modal visibility is gated by the modal, not page state. */
+.survey--in-modal .survey { margin: 0; display: block !important; }
 .survey--in-modal .js-survey-skip { display: none; }
 .survey__q--exempt { margin-top: var(--space-6); }
 .calc-field {
