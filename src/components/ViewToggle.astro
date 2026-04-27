@@ -10,10 +10,8 @@ const { lang } = Astro.props;
 ---
 
 <div class="view-toggle js-view-toggle-row" role="group" aria-label={t(lang, 'view.label')}>
-  <span class="view-toggle__label">{t(lang, 'view.label')}</span>
   <div class="view-toggle__buttons">
     <button type="button" class="view-toggle__btn js-view-toggle" data-view="for-me" aria-pressed="true">
-      <span aria-hidden="true">✦</span>
       {t(lang, 'view.for_me')}
     </button>
     <button type="button" class="view-toggle__btn js-view-toggle" data-view="all" aria-pressed="false">

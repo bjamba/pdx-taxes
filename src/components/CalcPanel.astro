@@ -9,78 +9,91 @@ interface Props {
 const { lang } = Astro.props;
 ---
 
-<!-- Trigger: a friendly card-button that opens the estimator modal. -->
+<!-- Trigger button — opens the modal where users can edit their answers. -->
 <button type="button" class="calc-trigger js-calc-trigger" aria-haspopup="dialog" aria-expanded="false">
   <span class="calc-trigger__icon" aria-hidden="true">📊</span>
   <span class="calc-trigger__text">
-    <span class="calc-trigger__title">{t(lang, 'calc.title')}</span>
-    <span class="calc-trigger__lead">{t(lang, 'calc.lead')}</span>
+    <span class="calc-trigger__title">{t(lang, 'calc.trigger_title')}</span>
+    <span class="calc-trigger__lead">{t(lang, 'calc.trigger_lead')}</span>
   </span>
 </button>
 
-<!-- Modal: only revealed when js-calc-modal is open. -->
-<div class="calc-modal js-calc-modal" role="dialog" aria-modal="true" aria-labelledby="calc-modal-title" aria-describedby="calc-modal-lead" hidden>
+<!-- Modal -->
+<div class="calc-modal js-calc-modal" role="dialog" aria-modal="true" aria-labelledby="calc-modal-title" hidden>
   <div class="calc-modal__overlay js-calc-close-overlay"></div>
 
   <div class="calc-modal__panel" role="document">
     <div class="calc-modal__head">
-      <div>
-        <span class="calc-panel__eyebrow">{t(lang, 'calc.eyebrow')}</span>
-        <h2 id="calc-modal-title" class="calc-modal__title">{t(lang, 'calc.title')}</h2>
-      </div>
+      <h2 id="calc-modal-title" class="calc-modal__title">{t(lang, 'calc.modal_title')}</h2>
       <button type="button" class="calc-modal__close js-calc-close" aria-label={t(lang, 'calc.close')}>×</button>
     </div>
-    <p id="calc-modal-lead" class="calc-modal__lead">{t(lang, 'calc.lead')}</p>
 
-    <div class="calc-modal__body js-calc-panel">
-      <div class="calc-panel__inputs">
-        <fieldset class="calc-panel__field calc-panel__field--filing">
-          <legend>{t(lang, 'calc.filing_label')}</legend>
-          <div class="calc-panel__radios">
-            <label class="calc-panel__radio">
-              <input type="radio" name="calc-filing" value="single" class="js-calc-filing" checked />
-              <span>{t(lang, 'survey.q2_single')}</span>
-            </label>
-            <label class="calc-panel__radio">
-              <input type="radio" name="calc-filing" value="joint" class="js-calc-filing" />
-              <span>{t(lang, 'survey.q2_joint')}</span>
-            </label>
-          </div>
-        </fieldset>
-
-        <label class="calc-panel__field calc-panel__field--income">
-          <span class="calc-panel__legend">{t(lang, 'calc.income_label')}</span>
-          <span class="calc-panel__input-wrap">
-            <span class="calc-panel__currency">$</span>
-            <input
-              type="number"
-              class="calc-panel__input js-calc-income"
-              placeholder="0"
-              inputmode="numeric"
-              min="0"
-              step="1000"
-              aria-label="Taxable income"
-            />
-            <button type="button" class="calc-panel__clear js-calc-clear" aria-label={t(lang, 'calc.clear_income')}>×</button>
-          </span>
-          <span class="calc-panel__hint">🔒 {t(lang, 'calc.privacy')}</span>
-        </label>
-
-        <fieldset class="calc-panel__field calc-panel__field--arts-exempt">
-          <legend>{t(lang, 'calc.arts_legend')}</legend>
-          <label class="calc-exempt">
-            <input type="checkbox" class="js-calc-arts-exempt" />
-            <span class="calc-exempt__main">
-              <span class="calc-exempt__title">{t(lang, 'calc.arts_exempt_label')}</span>
-              <span class="calc-exempt__hint">{t(lang, 'calc.arts_exempt_hint')}</span>
-            </span>
+    <form class="calc-modal__form js-calc-form" novalidate>
+      <fieldset class="calc-field">
+        <legend>{t(lang, 'survey.q1_label')}</legend>
+        <div class="calc-field__radios calc-field__radios--stack">
+          <label class="calc-radio">
+            <input type="radio" name="residency" value="portland" />
+            <span>{t(lang, 'survey.q1_portland')}</span>
           </label>
-        </fieldset>
-      </div>
+          <label class="calc-radio">
+            <input type="radio" name="residency" value="multnomah" />
+            <span>{t(lang, 'survey.q1_multnomah')}</span>
+          </label>
+          <label class="calc-radio">
+            <input type="radio" name="residency" value="metro" />
+            <span>{t(lang, 'survey.q1_metro')}</span>
+          </label>
+          <label class="calc-radio">
+            <input type="radio" name="residency" value="outside" />
+            <span>{t(lang, 'survey.q1_outside')}</span>
+          </label>
+          <label class="calc-radio">
+            <input type="radio" name="residency" value="unsure" />
+            <span>{t(lang, 'survey.q1_unsure')}</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="calc-field">
+        <legend>{t(lang, 'survey.q2_label')}</legend>
+        <div class="calc-field__radios">
+          <label class="calc-radio">
+            <input type="radio" name="filing" value="single" />
+            <span>{t(lang, 'survey.q2_single')}</span>
+          </label>
+          <label class="calc-radio">
+            <input type="radio" name="filing" value="joint" />
+            <span>{t(lang, 'survey.q2_joint')}</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <label class="calc-field">
+        <span class="calc-field__legend">{t(lang, 'survey.q3_label')}</span>
+        <span class="calc-income">
+          <span class="calc-income__currency">$</span>
+          <input type="number" name="income" class="calc-income__input" placeholder="0" inputmode="numeric" min="0" step="1000" />
+        </span>
+        <span class="calc-field__hint">{t(lang, 'survey.q3_hint')}</span>
+      </label>
+
+      <fieldset class="calc-field">
+        <legend>{t(lang, 'calc.arts_legend')}</legend>
+        <label class="calc-exempt">
+          <input type="checkbox" name="artsExempt" />
+          <span class="calc-exempt__main">
+            <span class="calc-exempt__title">{t(lang, 'calc.arts_exempt_label')}</span>
+            <span class="calc-exempt__hint">{t(lang, 'calc.arts_exempt_hint')}</span>
+          </span>
+        </label>
+      </fieldset>
+
+      <p class="calc-modal__privacy">🔒 {t(lang, 'calc.privacy')}</p>
 
       <div class="calc-modal__footer">
-        <button type="button" class="btn btn--primary js-calc-close">{t(lang, 'calc.done')}</button>
+        <button type="submit" class="btn btn--primary">{t(lang, 'calc.save')}</button>
       </div>
-    </div>
+    </form>
   </div>
 </div>

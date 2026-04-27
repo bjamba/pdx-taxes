@@ -5,7 +5,6 @@ import { t } from '../i18n/ui';
 interface Props {
   lang: Lang;
   taxId: string;
-  /** Compact label set used inside the deck cards */
   compact?: boolean;
 }
 
@@ -15,7 +14,6 @@ const labels = {
   'not-started': t(lang, 'status.not_started'),
   'in-progress': t(lang, 'status.in_progress'),
   'done': t(lang, 'status.done'),
-  'not-applicable': t(lang, 'status.not_applicable'),
 };
 ---
 
@@ -33,10 +31,6 @@ const labels = {
     <button type="button" class="segmented__btn js-status-btn" data-status="done" aria-pressed="false">
       <span class="segmented__icon" aria-hidden="true">✓</span>
       <span class="segmented__label">{labels['done']}</span>
-    </button>
-    <button type="button" class="segmented__btn segmented__btn--na js-status-btn" data-status="not-applicable" aria-pressed="false">
-      <span class="segmented__icon" aria-hidden="true">—</span>
-      <span class="segmented__label">{labels['not-applicable']}</span>
     </button>
   </div>
 </div>

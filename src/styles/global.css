@@ -626,20 +626,13 @@ ul { list-style: none; }
 
 .segmented {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0;
   border: 2px solid var(--ink);
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--paper);
   box-shadow: 0 3px 0 var(--ink);
-}
-@media (max-width: 540px) {
-  .segmented {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .segmented__btn:nth-child(1),
-  .segmented__btn:nth-child(2) { border-bottom: 2px solid var(--ink); }
 }
 .segmented__btn {
   appearance: none;
@@ -661,11 +654,7 @@ ul { list-style: none; }
   text-align: center;
   line-height: 1.2;
 }
-.segmented__btn:nth-child(2n) { border-right: 0; }
-@media (min-width: 541px) {
-  .segmented__btn:nth-child(2n) { border-right: 2px solid var(--ink); }
-  .segmented__btn:last-child { border-right: 0; }
-}
+.segmented__btn:last-child { border-right: 0; }
 .segmented__icon {
   font-size: 14px;
   line-height: 1;
@@ -683,7 +672,6 @@ ul { list-style: none; }
 }
 .segmented__btn[aria-pressed="true"][data-status="done"] { background: var(--portland); }
 .segmented__btn[aria-pressed="true"][data-status="in-progress"] { background: var(--metro); }
-.segmented__btn[aria-pressed="true"][data-status="not-applicable"] { background: var(--ink-faint); }
 
 /* ─── Callouts ────────────────────────────────────────────────────── */
 
@@ -1039,6 +1027,97 @@ ul { list-style: none; }
 .survey__options {
   display: grid;
   gap: var(--space-2);
+}
+
+/* Filing — horizontal pair of segmented buttons */
+.survey__filing-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: 0 3px 0 var(--ink);
+  height: 56px;
+}
+.survey-filing {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-4);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+  border-right: 2px solid var(--ink);
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.survey-filing:last-child { border-right: 0; }
+.survey-filing input { position: absolute; opacity: 0; pointer-events: none; }
+.survey-filing:hover { background: var(--surface-warm); }
+.survey-filing:has(input:checked) {
+  background: var(--ink);
+  color: var(--paper);
+}
+.survey-filing:has(input:focus-visible) {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+  z-index: 1;
+}
+
+/* Income — number input field */
+.survey-income {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.survey-income__wrap {
+  display: flex;
+  align-items: stretch;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  overflow: hidden;
+  box-shadow: 0 3px 0 var(--ink);
+  height: 56px;
+}
+.survey-income__currency {
+  padding: 0 var(--space-4);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+}
+.survey-income__input {
+  flex: 1;
+  border: 0;
+  padding: 0 var(--space-4);
+  font: inherit;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  background: var(--paper);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+.survey-income__input::placeholder {
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+.survey-income__input:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+}
+.survey-income__hint {
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-style: italic;
+  line-height: 1.4;
 }
 
 .survey-option {
@@ -1883,6 +1962,141 @@ ul { list-style: none; }
 .calc-panel {
   /* now lives inside the modal — no border / shadow of its own */
 }
+
+/* ─── Modal form — answers ────────────────────────────────── */
+
+.calc-modal__form { display: block; }
+.calc-modal__privacy {
+  font-size: 13px;
+  color: var(--ink-soft);
+  background: var(--paper);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed var(--border);
+  margin: var(--space-4) 0 var(--space-3);
+}
+.calc-field {
+  display: block;
+  margin-bottom: var(--space-5);
+  border: 0;
+  padding: 0;
+}
+.calc-field legend,
+.calc-field__legend {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-2);
+}
+.calc-field__hint {
+  display: block;
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-style: italic;
+  margin-top: var(--space-2);
+  line-height: 1.4;
+}
+.calc-field__radios {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: 0 3px 0 var(--ink);
+  height: 52px;
+}
+.calc-field__radios--stack {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-1);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  height: auto;
+  overflow: visible;
+}
+.calc-radio {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-3);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  border-right: 2px solid var(--ink);
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.calc-field__radios > .calc-radio:last-child { border-right: 0; }
+.calc-field__radios--stack > .calc-radio {
+  border-right: 0;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  justify-content: flex-start;
+  padding: 12px 16px;
+  background: var(--paper);
+  font-size: 15px;
+}
+.calc-radio input { position: absolute; opacity: 0; pointer-events: none; }
+.calc-field__radios .calc-radio:hover { background: var(--surface-warm); }
+.calc-field__radios .calc-radio:has(input:checked) {
+  background: var(--ink);
+  color: var(--paper);
+}
+.calc-field__radios--stack .calc-radio:hover { border-color: var(--ink); background: var(--surface); }
+.calc-field__radios--stack .calc-radio:has(input:checked) {
+  background: var(--portland-soft);
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.calc-radio:has(input:focus-visible) {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+  z-index: 1;
+}
+
+.calc-income {
+  display: flex;
+  align-items: stretch;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  overflow: hidden;
+  box-shadow: 0 3px 0 var(--ink);
+  height: 52px;
+}
+.calc-income__currency {
+  padding: 0 var(--space-3);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+}
+.calc-income__input {
+  flex: 1;
+  border: 0;
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  background: var(--paper);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+.calc-income__input:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+}
 /* Both inputs stack vertically with the same width — clean & predictable. */
 .calc-panel__inputs {
   display: grid;
@@ -2008,25 +2222,25 @@ ul { list-style: none; }
   font-style: italic;
 }
 
-/* ─── Card-level estimate slot (fixed height, lives on every card) ── */
+/* ─── Card-level estimate — trim, single-line ──────────────── */
 
 .card-est {
-  margin: var(--space-4) 0;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  border: 1.5px dashed var(--border);
+  margin: var(--space-3) 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
   background: var(--paper);
-  min-height: 64px;
-  transition: background 200ms ease-out, border-color 200ms ease-out;
-}
-.card-est__row {
   display: flex;
-  justify-content: space-between;
   align-items: baseline;
   gap: var(--space-2);
+  flex-wrap: wrap;
+  transition: background 180ms ease-out, border-color 180ms ease-out;
+}
+.card-est__row {
+  display: contents;
 }
 .card-est__label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--ink-faint);
   letter-spacing: 0.06em;
@@ -2034,46 +2248,50 @@ ul { list-style: none; }
 }
 .card-est__amount {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--ink-faint);
-  line-height: 1;
   letter-spacing: -0.01em;
+  line-height: 1;
 }
 .card-est__hint {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--ink-soft);
-  margin-top: 4px;
+  font-style: italic;
+  flex-basis: 100%;
   line-height: 1.3;
 }
 
 /* States */
 .card-est[data-state="computed"] {
   background: var(--portland-soft);
-  border: 1.5px solid var(--portland);
+  border: 1px solid var(--portland);
+  border-style: solid;
 }
 .card-est[data-state="computed"] .card-est__amount {
   color: var(--portland-deep);
+  font-size: 18px;
 }
+.card-est[data-state="computed"] .card-est__hint { display: none; }
 .card-est[data-state="below"] {
   background: var(--surface);
-  border: 1.5px solid var(--surface-edge);
+  border-color: var(--surface-edge);
+  border-style: solid;
 }
 .card-est[data-state="below"] .card-est__amount {
   color: var(--ink-soft);
-  font-size: 18px;
 }
 .card-est[data-state="exempt"] {
   background: var(--metro-soft);
-  border: 1.5px solid var(--metro);
+  border-color: var(--metro);
+  border-style: solid;
 }
 .card-est[data-state="exempt"] .card-est__amount {
   color: var(--metro-deep);
-  font-size: 20px;
 }
 .card-est[data-state="na"] {
   background: var(--paper);
-  border: 1.5px dashed var(--ink-faint);
+  border-color: var(--ink-faint);
   opacity: 0.6;
 }
 

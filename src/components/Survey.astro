@@ -10,7 +10,7 @@ const { lang } = Astro.props;
 ---
 
 <section class="survey js-survey">
-  <form class="survey__form js-survey-form">
+  <form class="survey__form js-survey-form" novalidate>
     <fieldset class="survey__q">
       <legend class="survey__legend">{t(lang, 'survey.q1_label')}</legend>
       <div class="survey__options">
@@ -42,42 +42,35 @@ const { lang } = Astro.props;
 
     <fieldset class="survey__q">
       <legend class="survey__legend">{t(lang, 'survey.q2_label')}</legend>
-      <div class="survey__options">
-        <label class="survey-option">
-          <input type="radio" name="filing" value="single" required />
+      <div class="survey__filing-row">
+        <label class="survey-filing">
+          <input type="radio" name="filing" value="single" required checked />
           <span>{t(lang, 'survey.q2_single')}</span>
         </label>
-        <label class="survey-option">
+        <label class="survey-filing">
           <input type="radio" name="filing" value="joint" />
           <span>{t(lang, 'survey.q2_joint')}</span>
-        </label>
-        <label class="survey-option">
-          <input type="radio" name="filing" value="unsure" />
-          <span>{t(lang, 'survey.q2_unsure')}</span>
         </label>
       </div>
     </fieldset>
 
     <fieldset class="survey__q">
       <legend class="survey__legend">{t(lang, 'survey.q3_label')}</legend>
-      <div class="survey__options">
-        <label class="survey-option">
-          <input type="radio" name="income" value="low" required checked />
-          <span>{t(lang, 'survey.q3_low')}</span>
-        </label>
-        <label class="survey-option">
-          <input type="radio" name="income" value="mid" />
-          <span>{t(lang, 'survey.q3_mid')}</span>
-        </label>
-        <label class="survey-option">
-          <input type="radio" name="income" value="high" />
-          <span>{t(lang, 'survey.q3_high')}</span>
-        </label>
-        <label class="survey-option">
-          <input type="radio" name="income" value="unsure" />
-          <span>{t(lang, 'survey.q3_unsure')}</span>
-        </label>
-      </div>
+      <label class="survey-income">
+        <span class="survey-income__wrap">
+          <span class="survey-income__currency">$</span>
+          <input
+            type="number"
+            name="income"
+            class="survey-income__input"
+            placeholder="0"
+            inputmode="numeric"
+            min="0"
+            step="1000"
+          />
+        </span>
+        <span class="survey-income__hint">{t(lang, 'survey.q3_hint')}</span>
+      </label>
     </fieldset>
 
     <p class="survey__privacy">🔒 {t(lang, 'survey.privacy_note')}</p>

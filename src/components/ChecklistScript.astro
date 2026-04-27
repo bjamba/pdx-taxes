@@ -1,13 +1,15 @@
 ---
-// Single client-side script: profile / state machine / checklist /
-// shared estimator / aggregate / calendar. State in localStorage only.
+// Single client-side script. State lives in localStorage only.
+// Profile is the unified model — one source of truth for both
+// applicability filtering AND calculator estimates.
 ---
 
 <script is:inline>
   (function () {
     const KEY_CHECKLIST = 'pdx-taxes:checklist:v1';
-    const KEY_PROFILE   = 'pdx-taxes:profile:v1';
-    const KEY_CALC      = 'pdx-taxes:calc:v1'; // { filing: 'single'|'joint', income: number, artsExempt: boolean }
+    const KEY_PROFILE   = 'pdx-taxes:profile:v2';
+    // Legacy v1 profile shape used income buckets; v2 uses a number.
+    // We just ignore the old key — users see the welcome again. Acceptable.
 
     const TAX_IDS = ['arts-tax', 'multnomah-pfa', 'metro-shs'];
 
@@ -34,23 +36,30 @@
       return (items[taxId] && items[taxId].status) || 'not-started';
     };
 
+    /**
+     * Profile shape (v2):
+     *   { residency: 'portland'|'multnomah'|'metro'|'outside'|'unsure',
+     *     filing:    'single'|'joint',
+     *     income:    number|null,           // null = "I'd rather not say"
+     *     artsExempt: boolean,
+     *     showAll:   boolean }              // toggled by view-toggle
+     */
     const readProfile = () => readJSON(KEY_PROFILE);
     const writeProfile = (p) => writeJSON(KEY_PROFILE, p);
-
-    const readCalc = () => readJSON(KEY_CALC) || { filing: 'single', income: null, artsExempt: false };
-    const writeCalc = (v) => writeJSON(KEY_CALC, v);
 
     /* ── Applicability ─────────────────────────────────── */
     function appliesTo(taxId, p) {
       if (!p || p.showAll) return true;
-      const inPortland = ['portland', 'unsure'].includes(p.residency);
+      const inPortland  = ['portland', 'unsure'].includes(p.residency);
       const inMultnomah = ['portland', 'multnomah', 'unsure'].includes(p.residency);
-      const inMetro = p.residency !== 'outside';
-      const overThreshold = ['mid', 'high', 'unsure'].includes(p.income);
+      const inMetro     = p.residency !== 'outside';
+      const isJoint     = p.filing === 'joint';
+      const overPFAThreshold   = p.income == null ? true : p.income > (isJoint ? 200000 : 125000);
+      const overSHSThreshold   = p.income == null ? true : p.income > (isJoint ? 205000 : 128000);
       switch (taxId) {
         case 'arts-tax':       return inPortland;
-        case 'multnomah-pfa':  return inMultnomah && overThreshold;
-        case 'metro-shs':      return inMetro && overThreshold;
+        case 'multnomah-pfa':  return inMultnomah && overPFAThreshold;
+        case 'metro-shs':      return inMetro && overSHSThreshold;
         default:               return true;
       }
     }
@@ -60,10 +69,10 @@
       try { return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
       catch { return '$' + Math.round(n).toLocaleString(); }
     }
-    function computeArts(profile, calc) {
+    function computeArts(profile) {
       const inPortland = profile && (profile.residency === 'portland' || profile.residency === 'unsure');
       if (!inPortland) return { applies: false, amount: 0, state: 'na' };
-      if (calc && calc.artsExempt) return { applies: false, amount: 0, state: 'exempt' };
+      if (profile.artsExempt) return { applies: false, amount: 0, state: 'exempt' };
       return { applies: true, amount: 35, state: 'computed' };
     }
     function computePFA(filing, income) {
@@ -109,7 +118,7 @@
       return allHandled ? 'done' : fallback;
     }
 
-    /* ── Renderers ─────────────────────────────────────── */
+    /* ── Render ──────────────────────────────────────── */
 
     function applyState() {
       const main = document.querySelector('[data-page="home"]');
@@ -145,12 +154,6 @@
         const active = (target === 'for-me' && filtered) || (target === 'all' && !filtered);
         btn.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
-      // Disable "For me" if user has no preferences saved (skipped without answering)
-      const forMeBtn = document.querySelector('.js-view-toggle[data-view="for-me"]');
-      if (forMeBtn) {
-        const hasPrefs = profile && (profile.residency || profile.filing || profile.income);
-        forMeBtn.toggleAttribute('disabled', false); // always clickable; clicking with no prefs sends to survey
-      }
 
       if (state === 'result') renderResultBanner(profile);
     }
@@ -214,46 +217,25 @@
       const n = applies.length;
       const titleEl = result.querySelector('.js-result-title');
       const bodyEl = result.querySelector('.js-result-body');
-      const showAllBtn = result.querySelector('.js-result-show-all');
       if (!titleEl) return;
       const lang = (document.documentElement.getAttribute('lang') || 'en').slice(0, 2);
       const I18N = {
         en: { some: (n,t)=>`Looks like <strong>${n} of ${t}</strong> likely apply to you.`,
               all:  (n)=>`Looks like <strong>all ${n}</strong> likely apply to you.`,
               none: ()=>`Nothing local for you this year.`,
-              noneBody: ()=>`Based on your answers, none of the three local taxes apply. (Federal and Oregon state taxes still do!)`,
-              showAll: (t)=>`Show me all ${t} anyway` },
+              noneBody: ()=>`Based on your answers, none of the three local taxes apply. (Federal and Oregon state taxes still do!)` },
         es: { some: (n,t)=>`Parece que <strong>${n} de ${t}</strong> le aplican.`,
               all:  (n)=>`Parece que los <strong>${n}</strong> le aplican.`,
               none: ()=>`No hay impuestos locales para usted este año.`,
-              noneBody: ()=>`Según sus respuestas, ninguno de los tres impuestos locales le aplica. (¡Los impuestos federal y estatal de Oregon sí!)`,
-              showAll: (t)=>`Mostrar los ${t} de todos modos` },
+              noneBody: ()=>`Según sus respuestas, ninguno de los tres impuestos locales le aplica. (¡Los impuestos federal y estatal de Oregon sí!)` },
       };
       const dict = I18N[lang] || I18N.en;
       if (n === 0) { titleEl.innerHTML = dict.none(); if (bodyEl) { bodyEl.textContent = dict.noneBody(); bodyEl.removeAttribute('hidden'); } }
       else if (n === total) { titleEl.innerHTML = dict.all(n); if (bodyEl) bodyEl.setAttribute('hidden', ''); }
       else { titleEl.innerHTML = dict.some(n, total); if (bodyEl) bodyEl.setAttribute('hidden', ''); }
-      if (showAllBtn) showAllBtn.textContent = dict.showAll(total);
     }
 
     function renderCardBadges() {
-      document.querySelectorAll('.js-card-status').forEach((badge) => {
-        const taxId = badge.getAttribute('data-tax-id');
-        if (!taxId) return;
-        const status = getStatus(taxId);
-        let labels = {};
-        try { labels = JSON.parse(badge.getAttribute('data-labels') || '{}'); } catch {}
-        badge.className = 'tax-card__status js-card-status' + (status !== 'not-started' ? ' tax-card__status--' + status : '');
-        const dot = badge.querySelector('.tax-card__status-dot');
-        const label = badge.querySelector('.tax-card__status-label');
-        if (label) label.textContent = labels[status] || labels['not-started'] || '';
-        if (dot) {
-          dot.style.background = status === 'done' ? 'var(--portland)'
-            : status === 'in-progress' ? 'var(--metro)'
-            : 'var(--ink-faint)';
-        }
-      });
-      // Same for deck cards
       document.querySelectorAll('.deck__card-status.js-card-status').forEach((badge) => {
         const taxId = badge.getAttribute('data-tax-id');
         if (!taxId) return;
@@ -294,7 +276,6 @@
       }).length;
       const pct = total === 0 ? 0 : Math.round((handled / total) * 100);
 
-      // Header progress badge (compact)
       const headerProgress = document.querySelector('.js-status-progress');
       if (headerProgress) {
         if (total === 0) { headerProgress.setAttribute('hidden', ''); }
@@ -308,22 +289,16 @@
       }
     }
 
-    /* ── Card-level estimate slot + aggregate ─────────── */
-
     function renderEstimates() {
       const profile = readProfile();
-      const calc = readCalc();
-      const filing = calc.filing || 'single';
-      const income = (calc.income == null) ? null : Number(calc.income);
       const lang = (document.documentElement.getAttribute('lang') || 'en').slice(0, 2);
-
       const I18N = {
-        en: { empty: 'Tap "Estimate" to see what you might owe',
+        en: { empty: 'Add your income to see an estimate',
               below: 'Below the threshold — you don\'t owe this',
               na: 'You marked this as not applicable',
               naProfile: 'Doesn\'t apply based on your answers',
               exempt: 'You\'re exempt from this tax' },
-        es: { empty: 'Toque "Estimar" para ver lo que podría deber',
+        es: { empty: 'Añada su ingreso para ver un estimado',
               below: 'Por debajo del umbral — no debe esto',
               na: 'Lo marcó como no aplicable',
               naProfile: 'No aplica según sus respuestas',
@@ -331,23 +306,26 @@
       };
       const dict = I18N[lang] || I18N.en;
 
-      // Per-tax results
+      const filing = (profile && profile.filing === 'joint') ? 'joint' : 'single';
+      const income = profile && profile.income != null ? profile.income : null;
+
       const results = {};
       TAX_IDS.forEach((id) => {
         let r;
-        if (id === 'arts-tax')          r = computeArts(profile, calc);
-        else if (id === 'multnomah-pfa') r = (income == null) ? { applies: null, amount: 0, state: 'empty' } : computePFA(filing, income);
-        else if (id === 'metro-shs')     r = (income == null) ? { applies: null, amount: 0, state: 'empty' } : computeSHS(filing, income);
-        // Override: user marked NA
+        if (id === 'arts-tax') {
+          r = computeArts(profile || {});
+        } else if (id === 'multnomah-pfa') {
+          r = (income == null) ? { applies: null, amount: 0, state: 'empty' } : computePFA(filing, income);
+        } else {
+          r = (income == null) ? { applies: null, amount: 0, state: 'empty' } : computeSHS(filing, income);
+        }
         const status = getStatus(id);
         if (status === 'not-applicable') r = { applies: false, amount: 0, state: 'na', userNa: true };
-        // Override: profile excludes
         if (profile && !profile.showAll && !appliesTo(id, profile)) {
           r = { applies: false, amount: 0, state: 'na', profileNa: true };
         }
         results[id] = r;
 
-        // Render the card slot
         const slot = document.querySelector(`.js-card-est[data-tax-id="${id}"]`);
         if (!slot) return;
         const amountEl = slot.querySelector('.js-card-est-amount');
@@ -376,11 +354,10 @@
         }
       });
 
-      renderAggregate(results, profile);
+      renderHeaderTotal(results, profile);
     }
 
-    function renderAggregate(results, profile) {
-      // Compute total of computed (applicable, non-NA) estimates.
+    function renderHeaderTotal(results, profile) {
       const applicableIds = TAX_IDS.filter((id) => !profile || profile.showAll || appliesTo(id, profile));
       let total = 0;
       let anyComputed = false;
@@ -388,54 +365,54 @@
         const r = results[id];
         if (r && r.state === 'computed') { total += r.amount; anyComputed = true; }
       });
-
-      // Update sticky header total badge.
       const headerTotal = document.querySelector('.js-status-total');
       const amountEl = document.querySelector('.js-status-total-amount');
-      if (headerTotal && amountEl) {
-        if (anyComputed) {
-          headerTotal.removeAttribute('hidden');
-          amountEl.textContent = fmtUSD(Math.ceil(total));
-        } else {
-          headerTotal.setAttribute('hidden', '');
-        }
+      if (!headerTotal || !amountEl) return;
+      if (anyComputed) {
+        headerTotal.removeAttribute('hidden');
+        amountEl.textContent = fmtUSD(Math.ceil(total));
+      } else {
+        headerTotal.setAttribute('hidden', '');
       }
     }
 
-    /* ── CalcPanel: read inputs, persist, render ──────── */
+    /* ── Profile updates ───────────────────────────── */
 
-    function syncCalcPanel() {
-      const calc = readCalc();
-      const filingEls = document.querySelectorAll('.js-calc-filing');
-      filingEls.forEach((el) => {
-        if (el.value === (calc.filing || 'single')) el.checked = true;
+    function readProfileFromForm(form) {
+      if (!form) return null;
+      const fd = new FormData(form);
+      const cur = readProfile() || {};
+      const residency = String(fd.get('residency') || cur.residency || 'portland');
+      const filing = String(fd.get('filing') || cur.filing || 'single');
+      const incomeStr = fd.get('income');
+      let income = cur.income == null ? null : cur.income;
+      if (incomeStr != null) {
+        const s = String(incomeStr).trim();
+        income = (s === '') ? null : (parseFloat(s) || 0);
+      }
+      const artsExempt = fd.has('artsExempt');
+      // Preserve showAll if present
+      return { residency, filing, income, artsExempt, ...(cur.showAll ? { showAll: true } : {}) };
+    }
+
+    function syncCalcModalForm(profile) {
+      const form = document.querySelector('.js-calc-form');
+      if (!form) return;
+      const p = profile || {};
+      // Residency
+      form.querySelectorAll('input[name="residency"]').forEach((r) => {
+        r.checked = (r.value === (p.residency || 'portland'));
       });
-      const incomeEl = document.querySelector('.js-calc-income');
-      if (incomeEl && calc.income != null) incomeEl.value = String(calc.income);
-      const exemptEl = document.querySelector('.js-calc-arts-exempt');
-      if (exemptEl) exemptEl.checked = !!calc.artsExempt;
-    }
-
-    function readCalcFromUI() {
-      const filingEl = document.querySelector('.js-calc-filing:checked');
-      const incomeEl = document.querySelector('.js-calc-income');
-      const exemptEl = document.querySelector('.js-calc-arts-exempt');
-      const filing = filingEl ? filingEl.value : 'single';
-      const incomeStr = incomeEl ? incomeEl.value : '';
-      const income = incomeStr === '' ? null : (parseFloat(incomeStr) || 0);
-      const artsExempt = !!(exemptEl && exemptEl.checked);
-      return { filing, income, artsExempt };
-    }
-
-    function onCalcChange() {
-      writeCalc(readCalcFromUI());
-      renderEstimates();
-    }
-
-    function clearCalcIncome() {
-      const incomeEl = document.querySelector('.js-calc-income');
-      if (incomeEl) incomeEl.value = '';
-      onCalcChange();
+      // Filing
+      form.querySelectorAll('input[name="filing"]').forEach((r) => {
+        r.checked = (r.value === (p.filing || 'single'));
+      });
+      // Income
+      const incomeEl = form.querySelector('input[name="income"]');
+      if (incomeEl) incomeEl.value = (p.income == null) ? '' : String(p.income);
+      // Arts exempt
+      const exemptEl = form.querySelector('input[name="artsExempt"]');
+      if (exemptEl) exemptEl.checked = !!p.artsExempt;
     }
 
     /* ── Calendar (.ics) ─────────────────────────────── */
@@ -494,7 +471,6 @@
       renderSegmented();
       renderProgress();
       renderEstimates();
-      // Reveal header status badges on the home page (not detail / deadlines)
       const main = document.querySelector('[data-page="home"]');
       const headerStatus = document.querySelector('.js-status-badges');
       if (headerStatus) {
@@ -509,7 +485,7 @@
     }
 
     function scrollToTopOfDeck() {
-      const target = document.querySelector('.js-result, .js-deck, .js-calc-panel');
+      const target = document.querySelector('.js-result, .js-deck, .js-calc-trigger');
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -550,58 +526,41 @@
       if (startBtn) startBtn.addEventListener('click', () => setMain('survey'));
       const skipBtn = document.querySelector('.js-welcome-skip');
       if (skipBtn) skipBtn.addEventListener('click', () => {
-        // No survey answers yet — pure "show all" with no other context.
-        writeProfile({ showAll: true });
+        writeProfile({ showAll: true, residency: 'unsure', filing: 'single', income: null, artsExempt: false });
         renderAll();
         scrollToTopOfDeck();
       });
 
-      // Survey
+      // Survey form (in-page)
       const form = document.querySelector('.js-survey-form');
       if (form) {
         form.addEventListener('submit', (e) => {
           e.preventDefault();
-          const fd = new FormData(form);
-          writeProfile({
-            residency: String(fd.get('residency') || 'unsure'),
-            filing:    String(fd.get('filing') || 'unsure'),
-            income:    String(fd.get('income') || 'unsure'),
-          });
-          // Carry filing into calc state if user picked single/joint
-          const filing = String(fd.get('filing') || 'unsure');
-          if (filing === 'single' || filing === 'joint') {
-            const cur = readCalc();
-            writeCalc({ filing, income: cur.income });
-          }
+          const profile = readProfileFromForm(form);
+          writeProfile(profile);
           renderAll();
-          syncCalcPanel();
           scrollToTopOfDeck();
         });
         const back = form.querySelector('.js-survey-skip');
-        if (back) back.addEventListener('click', () => { writeProfile({ showAll: true }); renderAll(); scrollToTopOfDeck(); });
+        if (back) back.addEventListener('click', () => {
+          writeProfile({ showAll: true, residency: 'unsure', filing: 'single', income: null, artsExempt: false });
+          renderAll();
+          scrollToTopOfDeck();
+        });
       }
 
-      // Result banner — preserve original profile fields when adding showAll
-      const showAllBtn = document.querySelector('.js-result-show-all');
-      if (showAllBtn) showAllBtn.addEventListener('click', () => {
-        const cur = readProfile() || {};
-        writeProfile({ ...cur, showAll: true });
-        renderAll();
-      });
+      // Result banner — edit goes back to the survey form
       const editBtn = document.querySelector('.js-result-edit');
-      if (editBtn) editBtn.addEventListener('click', () => { remove(KEY_PROFILE); setMain('survey'); });
+      if (editBtn) editBtn.addEventListener('click', () => { setMain('survey'); });
 
-      // Persistent view toggle (lives above the deck)
+      // View toggle
       document.querySelectorAll('.js-view-toggle').forEach((btn) => {
         btn.addEventListener('click', () => {
-          const target = btn.getAttribute('data-view'); // 'for-me' | 'all'
+          const target = btn.getAttribute('data-view');
           const cur = readProfile() || {};
           if (target === 'all') {
             writeProfile({ ...cur, showAll: true });
           } else {
-            // Switching back to filtered — drop showAll, keep the rest. If
-            // there's nothing else (e.g. user originally skipped), reset to
-            // welcome so they can answer questions.
             const { showAll, ...rest } = cur;
             if (rest && rest.residency) writeProfile(rest);
             else { remove(KEY_PROFILE); setMain('survey'); }
@@ -620,36 +579,19 @@
         if (note) { note.removeAttribute('hidden'); setTimeout(() => note.setAttribute('hidden', ''), 2500); }
       });
 
-      // Reset everything (profile + checklist + calc state)
+      // Reset everything
       const resetBtn = document.querySelector('.js-reset-all');
       if (resetBtn) resetBtn.addEventListener('click', (e) => {
         e.preventDefault();
         remove(KEY_CHECKLIST);
         remove(KEY_PROFILE);
-        remove(KEY_CALC);
-        // Re-sync the now-empty calc panel UI
-        const incomeEl = document.querySelector('.js-calc-income');
-        if (incomeEl) incomeEl.value = '';
-        const exemptEl = document.querySelector('.js-calc-arts-exempt');
-        if (exemptEl) exemptEl.checked = false;
-        const singleEl = document.querySelector('.js-calc-filing[value="single"]');
-        if (singleEl) singleEl.checked = true;
+        // also drop legacy v1 keys
+        remove('pdx-taxes:profile:v1');
+        remove('pdx-taxes:calc:v1');
         renderAll();
         const note = document.querySelector('.js-cleared-note');
         if (note) { note.removeAttribute('hidden'); setTimeout(() => note.setAttribute('hidden', ''), 2500); }
       });
-
-      // CalcPanel inputs
-      document.querySelectorAll('.js-calc-filing').forEach((r) => r.addEventListener('change', onCalcChange));
-      const incomeEl = document.querySelector('.js-calc-income');
-      if (incomeEl) {
-        incomeEl.addEventListener('input', onCalcChange);
-        incomeEl.addEventListener('change', onCalcChange);
-      }
-      const clearIncomeBtn = document.querySelector('.js-calc-clear');
-      if (clearIncomeBtn) clearIncomeBtn.addEventListener('click', clearCalcIncome);
-      const exemptEl = document.querySelector('.js-calc-arts-exempt');
-      if (exemptEl) exemptEl.addEventListener('change', onCalcChange);
 
       // Calc modal — open / close
       const modal = document.querySelector('.js-calc-modal');
@@ -658,13 +600,13 @@
       function openCalc() {
         if (!modal) return;
         lastFocus = document.activeElement;
+        syncCalcModalForm(readProfile());
         modal.removeAttribute('hidden');
         modal.classList.add('is-open');
         document.body.style.overflow = 'hidden';
         if (trigger) trigger.setAttribute('aria-expanded', 'true');
-        // Focus the income field for instant typing
         setTimeout(() => {
-          const inc = modal.querySelector('.js-calc-income');
+          const inc = modal.querySelector('input[name="income"]');
           if (inc) inc.focus();
         }, 50);
       }
@@ -677,12 +619,31 @@
         if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
       }
       if (trigger) trigger.addEventListener('click', openCalc);
-      document.querySelectorAll('.js-calc-close, .js-calc-close-overlay').forEach((el) => {
-        el.addEventListener('click', closeCalc);
-      });
+      document.querySelectorAll('.js-calc-close, .js-calc-close-overlay').forEach((el) => el.addEventListener('click', closeCalc));
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && modal && modal.classList.contains('is-open')) closeCalc();
       });
+      const calcForm = document.querySelector('.js-calc-form');
+      if (calcForm) {
+        calcForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const profile = readProfileFromForm(calcForm);
+          writeProfile(profile);
+          renderAll();
+          closeCalc();
+        });
+        // Live update as user types in the modal — without closing.
+        calcForm.addEventListener('input', () => {
+          const profile = readProfileFromForm(calcForm);
+          writeProfile(profile);
+          renderAll();
+        });
+        calcForm.addEventListener('change', () => {
+          const profile = readProfileFromForm(calcForm);
+          writeProfile(profile);
+          renderAll();
+        });
+      }
 
       // Calendar — single
       document.querySelectorAll('.js-calendar-add').forEach((btn) => {
@@ -732,8 +693,7 @@
           flashCalendarFeedback(btn);
         });
       });
-
-      // Deadlines page — checkbox selection + bulk download
+      // Deadlines page — checkbox bulk
       const dlPage = document.querySelector('.js-deadlines');
       if (dlPage) {
         const downloadBtn = dlPage.querySelector('.js-deadlines-download');
@@ -743,19 +703,11 @@
           if (countEl) countEl.textContent = String(checked.length);
           if (downloadBtn) downloadBtn.toggleAttribute('disabled', checked.length === 0);
         };
-        dlPage.querySelectorAll('.js-deadline-check').forEach((cb) => {
-          cb.addEventListener('change', updateSelectionUI);
-        });
+        dlPage.querySelectorAll('.js-deadline-check').forEach((cb) => cb.addEventListener('change', updateSelectionUI));
         const selectAll = dlPage.querySelector('.js-deadlines-select-all');
-        if (selectAll) selectAll.addEventListener('click', () => {
-          dlPage.querySelectorAll('.js-deadline-check').forEach((cb) => cb.checked = true);
-          updateSelectionUI();
-        });
+        if (selectAll) selectAll.addEventListener('click', () => { dlPage.querySelectorAll('.js-deadline-check').forEach((cb) => cb.checked = true); updateSelectionUI(); });
         const selectNone = dlPage.querySelector('.js-deadlines-select-none');
-        if (selectNone) selectNone.addEventListener('click', () => {
-          dlPage.querySelectorAll('.js-deadline-check').forEach((cb) => cb.checked = false);
-          updateSelectionUI();
-        });
+        if (selectNone) selectNone.addEventListener('click', () => { dlPage.querySelectorAll('.js-deadline-check').forEach((cb) => cb.checked = false); updateSelectionUI(); });
         dlPage.querySelectorAll('.js-deadlines-select-group').forEach((btn) => {
           btn.addEventListener('click', () => {
             const group = btn.getAttribute('data-group');
@@ -784,18 +736,14 @@
 
     function init() {
       try {
-        syncCalcPanel();
         renderAll();
         bind();
       } catch (err) {
-        // Defensive: if anything throws, at least reveal the page so the user
-        // isn't staring at a blank screen.
         const main = document.querySelector('[data-page="home"]');
         if (main && main.getAttribute('data-state') === 'loading') {
           const profile = readProfile();
           main.setAttribute('data-state', profile ? 'skipped' : 'welcome');
         }
-        // Re-throw so the error shows in console for debugging.
         throw err;
       }
     }
