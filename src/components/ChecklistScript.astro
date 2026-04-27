@@ -7,7 +7,7 @@
   (function () {
     const KEY_CHECKLIST = 'pdx-taxes:checklist:v1';
     const KEY_PROFILE   = 'pdx-taxes:profile:v1';
-    const KEY_CALC      = 'pdx-taxes:calc:v1'; // { filing: 'single'|'joint', income: number }
+    const KEY_CALC      = 'pdx-taxes:calc:v1'; // { filing: 'single'|'joint', income: number, artsExempt: boolean }
 
     const TAX_IDS = ['arts-tax', 'multnomah-pfa', 'metro-shs'];
 
@@ -37,7 +37,7 @@
     const readProfile = () => readJSON(KEY_PROFILE);
     const writeProfile = (p) => writeJSON(KEY_PROFILE, p);
 
-    const readCalc = () => readJSON(KEY_CALC) || { filing: 'single', income: null };
+    const readCalc = () => readJSON(KEY_CALC) || { filing: 'single', income: null, artsExempt: false };
     const writeCalc = (v) => writeJSON(KEY_CALC, v);
 
     /* ── Applicability ─────────────────────────────────── */
@@ -60,9 +60,10 @@
       try { return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
       catch { return '$' + Math.round(n).toLocaleString(); }
     }
-    function computeArts(profile) {
+    function computeArts(profile, calc) {
       const inPortland = profile && (profile.residency === 'portland' || profile.residency === 'unsure');
       if (!inPortland) return { applies: false, amount: 0, state: 'na' };
+      if (calc && calc.artsExempt) return { applies: false, amount: 0, state: 'exempt' };
       return { applies: true, amount: 35, state: 'computed' };
     }
     function computePFA(filing, income) {
@@ -279,8 +280,6 @@
     }
 
     function renderProgress() {
-      const bar = document.querySelector('.js-progress');
-      if (!bar) return;
       const items = readChecklist();
       const profile = readProfile();
       const cards = Array.from(document.querySelectorAll('[data-progress-id]'));
@@ -290,17 +289,24 @@
       });
       const ids = Array.from(new Set(visible.map((c) => c.getAttribute('data-progress-id')).filter(Boolean)));
       const total = ids.length;
-      if (total === 0) { bar.setAttribute('hidden', ''); return; }
-      bar.removeAttribute('hidden');
       const handled = ids.filter((id) => {
         const it = items[id];
         return it && (it.status === 'done' || it.status === 'not-applicable');
       }).length;
-      const fill = bar.querySelector('.progress__fill');
-      const count = bar.querySelector('.progress__count');
-      const pct = Math.round((handled / total) * 100);
-      if (fill) fill.style.width = pct + '%';
-      if (count) count.textContent = handled + ' / ' + total;
+      const pct = total === 0 ? 0 : Math.round((handled / total) * 100);
+
+      // Header progress badge (compact)
+      const headerProgress = document.querySelector('.js-status-progress');
+      if (headerProgress) {
+        if (total === 0) { headerProgress.setAttribute('hidden', ''); }
+        else {
+          headerProgress.removeAttribute('hidden');
+          const fill = headerProgress.querySelector('.js-status-progress-fill');
+          const text = headerProgress.querySelector('.js-status-progress-text');
+          if (fill) fill.style.width = pct + '%';
+          if (text) text.textContent = `${handled}/${total}`;
+        }
+      }
     }
 
     /* ── Card-level estimate slot + aggregate ─────────── */
@@ -313,14 +319,16 @@
       const lang = (document.documentElement.getAttribute('lang') || 'en').slice(0, 2);
 
       const I18N = {
-        en: { empty: 'Enter your income above to see an estimate',
+        en: { empty: 'Tap "Estimate" to see what you might owe',
               below: 'Below the threshold — you don\'t owe this',
               na: 'You marked this as not applicable',
-              naProfile: 'Doesn\'t apply based on your answers' },
-        es: { empty: 'Ingrese su ingreso arriba para ver un estimado',
+              naProfile: 'Doesn\'t apply based on your answers',
+              exempt: 'You\'re exempt from this tax' },
+        es: { empty: 'Toque "Estimar" para ver lo que podría deber',
               below: 'Por debajo del umbral — no debe esto',
               na: 'Lo marcó como no aplicable',
-              naProfile: 'No aplica según sus respuestas' },
+              naProfile: 'No aplica según sus respuestas',
+              exempt: 'Está exento de este impuesto' },
       };
       const dict = I18N[lang] || I18N.en;
 
@@ -328,7 +336,7 @@
       const results = {};
       TAX_IDS.forEach((id) => {
         let r;
-        if (id === 'arts-tax')          r = computeArts(profile);
+        if (id === 'arts-tax')          r = computeArts(profile, calc);
         else if (id === 'multnomah-pfa') r = (income == null) ? { applies: null, amount: 0, state: 'empty' } : computePFA(filing, income);
         else if (id === 'metro-shs')     r = (income == null) ? { applies: null, amount: 0, state: 'empty' } : computeSHS(filing, income);
         // Override: user marked NA
@@ -354,6 +362,10 @@
           slot.setAttribute('data-state', 'below');
           if (amountEl) amountEl.textContent = '$0';
           if (hintEl) hintEl.textContent = dict.below;
+        } else if (r.state === 'exempt') {
+          slot.setAttribute('data-state', 'exempt');
+          if (amountEl) amountEl.textContent = '$0';
+          if (hintEl) hintEl.textContent = dict.exempt;
         } else if (r.state === 'na') {
           slot.setAttribute('data-state', 'na');
           if (amountEl) amountEl.textContent = '—';
@@ -369,53 +381,25 @@
     }
 
     function renderAggregate(results, profile) {
-      const banner = document.querySelector('.js-aggregate');
-      if (!banner) return;
-      const amountEl = banner.querySelector('.js-aggregate-amount');
-      const chipsEl = banner.querySelector('.js-aggregate-chips');
-      const emptyEl = banner.querySelector('.js-aggregate-empty');
-      if (!amountEl || !chipsEl) return;
-
-      // Filter to taxes applicable per profile
+      // Compute total of computed (applicable, non-NA) estimates.
       const applicableIds = TAX_IDS.filter((id) => !profile || profile.showAll || appliesTo(id, profile));
-
       let total = 0;
       let anyComputed = false;
-      const lang = (document.documentElement.getAttribute('lang') || 'en').slice(0, 2);
-      const NAMES = {
-        en: { 'arts-tax': 'Arts Tax', 'multnomah-pfa': 'Multnomah PFA', 'metro-shs': 'Metro SHS' },
-        es: { 'arts-tax': 'Imp. Artes', 'multnomah-pfa': 'PFA Multnomah', 'metro-shs': 'Metro SHS' },
-      };
-      const STATE_LABELS = {
-        en: { computed: '', below: '$0', 'not-yet': '—', na: 'skipped' },
-        es: { computed: '', below: '$0', 'not-yet': '—', na: 'omitido' },
-      };
-      const namesDict = NAMES[lang] || NAMES.en;
-      const stateDict = STATE_LABELS[lang] || STATE_LABELS.en;
-
-      chipsEl.innerHTML = '';
       applicableIds.forEach((id) => {
         const r = results[id];
-        let state;
-        let trailing = '';
-        if (r.state === 'na') { state = 'na'; trailing = stateDict['na']; }
-        else if (r.state === 'computed') { state = 'computed'; total += r.amount; anyComputed = true; trailing = fmtUSD(Math.ceil(r.amount)); }
-        else if (r.state === 'below') { state = 'below'; trailing = '$0'; }
-        else { state = 'not-yet'; trailing = stateDict['not-yet']; }
-        const chip = document.createElement('span');
-        chip.className = 'agg-chip';
-        chip.setAttribute('data-state', state);
-        chip.setAttribute('data-tax-id', id);
-        chip.innerHTML = `<span class="agg-chip__dot" aria-hidden="true"></span><span class="agg-chip__name">${namesDict[id]}</span><span class="agg-chip__amount">${trailing}</span>`;
-        chipsEl.appendChild(chip);
+        if (r && r.state === 'computed') { total += r.amount; anyComputed = true; }
       });
 
-      if (anyComputed) {
-        amountEl.textContent = fmtUSD(Math.ceil(total));
-        if (emptyEl) emptyEl.style.display = 'none';
-      } else {
-        amountEl.textContent = '—';
-        if (emptyEl) emptyEl.style.display = '';
+      // Update sticky header total badge.
+      const headerTotal = document.querySelector('.js-status-total');
+      const amountEl = document.querySelector('.js-status-total-amount');
+      if (headerTotal && amountEl) {
+        if (anyComputed) {
+          headerTotal.removeAttribute('hidden');
+          amountEl.textContent = fmtUSD(Math.ceil(total));
+        } else {
+          headerTotal.setAttribute('hidden', '');
+        }
       }
     }
 
@@ -429,15 +413,19 @@
       });
       const incomeEl = document.querySelector('.js-calc-income');
       if (incomeEl && calc.income != null) incomeEl.value = String(calc.income);
+      const exemptEl = document.querySelector('.js-calc-arts-exempt');
+      if (exemptEl) exemptEl.checked = !!calc.artsExempt;
     }
 
     function readCalcFromUI() {
       const filingEl = document.querySelector('.js-calc-filing:checked');
       const incomeEl = document.querySelector('.js-calc-income');
+      const exemptEl = document.querySelector('.js-calc-arts-exempt');
       const filing = filingEl ? filingEl.value : 'single';
       const incomeStr = incomeEl ? incomeEl.value : '';
       const income = incomeStr === '' ? null : (parseFloat(incomeStr) || 0);
-      return { filing, income };
+      const artsExempt = !!(exemptEl && exemptEl.checked);
+      return { filing, income, artsExempt };
     }
 
     function onCalcChange() {
@@ -507,6 +495,13 @@
       renderSegmented();
       renderProgress();
       renderEstimates();
+      // Reveal header status badges on the home page (not detail / deadlines)
+      const main = document.querySelector('[data-page="home"]');
+      const headerStatus = document.querySelector('.js-status-badges');
+      if (headerStatus) {
+        if (main) headerStatus.removeAttribute('hidden');
+        else headerStatus.setAttribute('hidden', '');
+      }
     }
 
     function setMain(state) {
@@ -628,10 +623,8 @@
         if (note) { note.removeAttribute('hidden'); setTimeout(() => note.setAttribute('hidden', ''), 2500); }
       });
 
-      // CalcPanel
-      document.querySelectorAll('.js-calc-filing').forEach((r) => {
-        r.addEventListener('change', onCalcChange);
-      });
+      // CalcPanel inputs
+      document.querySelectorAll('.js-calc-filing').forEach((r) => r.addEventListener('change', onCalcChange));
       const incomeEl = document.querySelector('.js-calc-income');
       if (incomeEl) {
         incomeEl.addEventListener('input', onCalcChange);
@@ -639,6 +632,41 @@
       }
       const clearIncomeBtn = document.querySelector('.js-calc-clear');
       if (clearIncomeBtn) clearIncomeBtn.addEventListener('click', clearCalcIncome);
+      const exemptEl = document.querySelector('.js-calc-arts-exempt');
+      if (exemptEl) exemptEl.addEventListener('change', onCalcChange);
+
+      // Calc modal — open / close
+      const modal = document.querySelector('.js-calc-modal');
+      const trigger = document.querySelector('.js-calc-trigger');
+      let lastFocus = null;
+      function openCalc() {
+        if (!modal) return;
+        lastFocus = document.activeElement;
+        modal.removeAttribute('hidden');
+        modal.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+        if (trigger) trigger.setAttribute('aria-expanded', 'true');
+        // Focus the income field for instant typing
+        setTimeout(() => {
+          const inc = modal.querySelector('.js-calc-income');
+          if (inc) inc.focus();
+        }, 50);
+      }
+      function closeCalc() {
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.setAttribute('hidden', '');
+        document.body.style.overflow = '';
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+      }
+      if (trigger) trigger.addEventListener('click', openCalc);
+      document.querySelectorAll('.js-calc-close, .js-calc-close-overlay').forEach((el) => {
+        el.addEventListener('click', closeCalc);
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal && modal.classList.contains('is-open')) closeCalc();
+      });
 
       // Calendar — single
       document.querySelectorAll('.js-calendar-add').forEach((btn) => {

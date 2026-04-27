@@ -8,7 +8,6 @@ import Survey from '../../components/Survey.astro';
 import Result from '../../components/Result.astro';
 import ViewToggle from '../../components/ViewToggle.astro';
 import CalcPanel from '../../components/CalcPanel.astro';
-import Aggregate from '../../components/Aggregate.astro';
 import Celebration from '../../components/Celebration.astro';
 import { t } from '../../i18n/ui';
 
@@ -20,35 +19,22 @@ const taxes = (await getCollection('taxes-es')).sort(
 
 <BaseLayout lang={lang} path="" title="Impuestos locales de Portland en un solo lugar">
   <div data-page="home" data-state="loading">
-    <section class="hero">
-      <span class="hero__eyebrow">{t(lang, 'hero.eyebrow')}</span>
-      <h1 class="hero__title">
-        {t(lang, 'hero.title_a')} <em>{t(lang, 'hero.title_em')}</em> {t(lang, 'hero.title_b')}
-      </h1>
-      <p class="hero__lead">{t(lang, 'hero.lead')}</p>
-    </section>
-
     <Welcome lang={lang} />
     <Survey lang={lang} />
     <Result lang={lang} total={taxes.length} />
-    <Disclaimer lang={lang} />
     <Celebration lang={lang} />
 
-    <div class="progress js-progress" role="status" aria-label={t(lang, 'checklist.progress')}>
-      <div class="progress__top">
-        <span class="progress__title">{t(lang, 'checklist.title')}</span>
-        <span class="progress__count tabular">0 / {taxes.length}</span>
-      </div>
-      <div class="progress__track" aria-hidden="true">
-        <div class="progress__fill" style="width: 0%"></div>
-      </div>
-    </div>
+    <section class="hero hero--compact">
+      <h1 class="hero__title">
+        {t(lang, 'hero.title_a')} <em>{t(lang, 'hero.title_em')}</em> {t(lang, 'hero.title_b')}
+      </h1>
+    </section>
 
     <CalcPanel lang={lang} />
-    <Aggregate lang={lang} />
-
     <ViewToggle lang={lang} />
     <TaxDeck lang={lang} taxes={taxes} />
+
+    <Disclaimer lang={lang} />
 
     <p class="clear-row js-clear-row">
       <button type="button" class="btn btn--ghost js-clear-checklist">{t(lang, 'checklist.clear')}</button>

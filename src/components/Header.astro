@@ -20,6 +20,21 @@ const deadlinesHref = url(lang === 'en' ? '/deadlines' : `/${lang}/deadlines`);
       <BrandMark />
       <span class="brand-name">{t(lang, 'site.name')}</span>
     </a>
+
+    <!-- Live status — total + progress. Hidden on detail / deadlines pages, populated by JS on home. -->
+    <div class="status-badges js-status-badges" hidden>
+      <div class="status-badges__total js-status-total" hidden>
+        <span class="status-badges__label">{t(lang, 'header.total')}</span>
+        <span class="status-badges__amount tabular js-status-total-amount">$0</span>
+      </div>
+      <div class="status-badges__progress js-status-progress" hidden>
+        <span class="status-badges__progress-track" aria-hidden="true">
+          <span class="status-badges__progress-fill js-status-progress-fill"></span>
+        </span>
+        <span class="status-badges__progress-text tabular js-status-progress-text">0/0</span>
+      </div>
+    </div>
+
     <nav class="site-nav" aria-label="Primary">
       <a href={deadlinesHref} class="site-nav__link">{t(lang, 'deadlines.nav_label')}</a>
     </nav>

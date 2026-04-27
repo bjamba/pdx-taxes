@@ -63,6 +63,10 @@ export const ui = {
     'view.for_me': 'For me',
     'view.all': 'All taxes',
 
+    /* Header live badges */
+    'header.total': 'Estimated total',
+    'header.progress': 'Done',
+
     /* Tax card / detail */
     'tax.see_details': 'See details',
     'tax.who_owes': 'Who owes this',
@@ -106,17 +110,24 @@ export const ui = {
     'jurisdiction.multnomah-county': 'Multnomah County',
     'jurisdiction.metro': 'Metro',
 
-    /* Estimator (shared calc panel) */
+    /* Estimator (shared calc panel + modal) */
     'calc.eyebrow': 'Estimator',
-    'calc.title': 'Want to know what you\'ll owe?',
+    'calc.title': 'Estimate what you\'ll owe',
     'calc.lead': 'Enter your income once. We\'ll show what each tax estimates and add it up.',
     'calc.filing_label': 'Filing as',
     'calc.income_label': 'Your taxable income',
     'calc.privacy': 'Stays in this browser. We never see this.',
-    'card_est.empty': 'Enter your income above to see an estimate',
+    'calc.close': 'Close estimator',
+    'calc.done': 'Done',
+    'calc.clear_income': 'Clear income',
+    'calc.arts_legend': 'Arts Tax exemption',
+    'calc.arts_exempt_label': 'I\'m exempt from the Arts Tax',
+    'calc.arts_exempt_hint': 'You\'re exempt if you earned under $1,000 this year, or if your household income is at or below the federal poverty level (~$15,650 for a single-person household in 2025).',
+    'card_est.empty': 'Tap "Estimate" to see what you might owe',
     'card_est.below': 'Below the threshold — you don\'t owe this',
     'card_est.label': 'Your estimate',
     'card_est.na': 'You marked this as not applicable',
+    'card_est.exempt': 'You\'re exempt from this tax',
 
     /* Aggregate */
     'aggregate.title': 'Estimated total',
@@ -190,6 +201,9 @@ export const ui = {
     'view.for_me': 'Para mí',
     'view.all': 'Todos',
 
+    'header.total': 'Estimado',
+    'header.progress': 'Hecho',
+
     'tax.see_details': 'Ver detalles',
     'tax.who_owes': 'Quién lo debe',
     'tax.rate': 'Tarifa',
@@ -230,15 +244,22 @@ export const ui = {
     'jurisdiction.metro': 'Metro',
 
     'calc.eyebrow': 'Calculadora',
-    'calc.title': '¿Quiere saber cuánto deberá?',
+    'calc.title': 'Estimar lo que deberá',
     'calc.lead': 'Ingrese sus datos una vez. Le mostraremos lo que cada impuesto estima y lo sumaremos.',
     'calc.filing_label': 'Presentando como',
     'calc.income_label': 'Su ingreso imponible',
     'calc.privacy': 'Se queda en este navegador. Nunca lo vemos.',
-    'card_est.empty': 'Ingrese su ingreso arriba para ver un estimado',
+    'calc.close': 'Cerrar calculadora',
+    'calc.done': 'Listo',
+    'calc.clear_income': 'Borrar ingreso',
+    'calc.arts_legend': 'Exención del Impuesto de las Artes',
+    'calc.arts_exempt_label': 'Estoy exento del Impuesto de las Artes',
+    'calc.arts_exempt_hint': 'Está exento si ganó menos de $1,000 este año, o si los ingresos de su hogar están en o por debajo del nivel federal de pobreza (~$15,650 para un hogar de una sola persona en 2025).',
+    'card_est.empty': 'Toque "Estimar" para ver lo que podría deber',
     'card_est.below': 'Por debajo del umbral — no debe esto',
     'card_est.label': 'Su estimado',
     'card_est.na': 'Lo marcó como no aplicable',
+    'card_est.exempt': 'Está exento de este impuesto',
 
     'aggregate.title': 'Total estimado',
     'aggregate.subtitle': 'entre los impuestos que le aplican',
