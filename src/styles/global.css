@@ -1520,6 +1520,10 @@ ul { list-style: none; }
   gap: var(--space-3);
   margin-top: var(--space-6);
 }
+.deck__nav--top {
+  margin-top: 0;
+  margin-bottom: var(--space-4);
+}
 .deck__nav-btn {
   appearance: none;
   background: var(--paper);

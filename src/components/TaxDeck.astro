@@ -25,6 +25,28 @@ const { lang, taxes } = Astro.props;
 ---
 
 <section class="deck js-deck" aria-label="Tax cards" data-page-deck>
+  <nav class="deck__nav deck__nav--top" aria-label="Card navigation">
+    <button type="button" class="deck__nav-btn deck__nav-btn--prev js-deck-prev" aria-label="Previous tax">
+      <span aria-hidden="true">←</span>
+      <span class="deck__nav-label">Previous</span>
+    </button>
+
+    <ol class="deck__dots" aria-label="Position">
+      {taxes.map((tax, i) => (
+        <li>
+          <button type="button" class={`deck__dot ${i === 0 ? 'is-active' : ''}`} data-deck-go={i} aria-label={`Go to tax ${i + 1}`}>
+            <span class="sr-only">{i + 1}</span>
+          </button>
+        </li>
+      ))}
+    </ol>
+
+    <button type="button" class="deck__nav-btn deck__nav-btn--next js-deck-next" aria-label="Next tax">
+      <span class="deck__nav-label">Next</span>
+      <span aria-hidden="true">→</span>
+    </button>
+  </nav>
+
   <ol class="deck__cards">
     {taxes.map((tax, i) => (
       <li
@@ -113,25 +135,4 @@ const { lang, taxes } = Astro.props;
     </div>
   </div>
 
-  <nav class="deck__nav" aria-label="Card navigation">
-    <button type="button" class="deck__nav-btn deck__nav-btn--prev js-deck-prev" aria-label="Previous tax">
-      <span aria-hidden="true">←</span>
-      <span class="deck__nav-label">Previous</span>
-    </button>
-
-    <ol class="deck__dots" aria-label="Position">
-      {taxes.map((tax, i) => (
-        <li>
-          <button type="button" class={`deck__dot ${i === 0 ? 'is-active' : ''}`} data-deck-go={i} aria-label={`Go to tax ${i + 1}`}>
-            <span class="sr-only">{i + 1}</span>
-          </button>
-        </li>
-      ))}
-    </ol>
-
-    <button type="button" class="deck__nav-btn deck__nav-btn--next js-deck-next" aria-label="Next tax">
-      <span class="deck__nav-label">Next</span>
-      <span aria-hidden="true">→</span>
-    </button>
-  </nav>
 </section>
